@@ -1,4 +1,5 @@
 import React from "react";
+import CreateCompanyForm from "./CreateCompanyForm.jsx";
     export default function Layout() {
         return (
             //Producten
@@ -7,6 +8,7 @@ import React from "react";
                     <h2 className="text-xl font-semibold mb-4">Producten</h2>
                     <div className="flex-1 bg-blue-50 rounded-lg p-4 mb-4">
                         //productenlijst
+                        <CreateCompanyForm/>
                     </div>
                     <div className="border-t pt-2 text-center text-gray-500">
                         Preview op de telefoon
