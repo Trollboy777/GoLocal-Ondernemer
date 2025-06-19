@@ -4,14 +4,14 @@ import ProductList from "./ProductList.jsx";
 
 export default function Layout() {
     return (
-        <div className="flex h-screen w-full bg-white p-4 gap-4"> {/* bg-gray-100 gewijzigd naar bg-white */}
+        <div className="flex h-screen w-full bg-white p-4 gap-4">
             {/* Producten */}
-            <div className="flex flex-col w-1/3 bg-white rounded-xl shadow p-4 border-r border-gray-300">
+            <div className="flex flex-col w-1/3 bg-white rounded-xl shadow p-4 border-r border-gray-400"> {/* Gewijzigd naar border-gray-400 */}
                 <ProductList />
             </div>
 
             {/* Bedrijfsinformatie */}
-            <div className="flex flex-col w-1/3 bg-white rounded-xl shadow p-4 border-r border-gray-300">
+            <div className="flex flex-col w-1/3 bg-white rounded-xl shadow p-4 border-r border-gray-400"> {/* Gewijzigd naar border-gray-400 */}
                 <h2 className="text-xl font-semibold mb-4">Bedrijfsinformatie</h2>
                 <div className="flex-1 bg-blue-50 rounded-lg p-4 mb-4">
                     <CreateCompanyForm />
