@@ -1,15 +1,102 @@
 import React, { useEffect, useState } from "react";
 import { Pencil, Trash2, Plus } from "lucide-react"; // Importeer 'Plus' icon
 
+function ProductEditPopup({ product, onCancel, onSave }) {
+    const [formData, setFormData] = useState(product);
+    console.log("Editing product in ProductEditPopup:", product);
+
+    const handleChange = (e) => {
+        setFormData({ ...formData, [e.target.name]: e.target.value });
+    };
+
+    const handleSubmit = (e) => {
+        e.preventDefault();
+        onSave(formData); // Sla de wijzigingen op
+    };
+
+    return (
+        <div style={{ zIndex: 9999, position: "fixed", border: "2px solid red", backgroundColor: "rgba(255, 0, 0, 0.2)" }} className="flex items-center justify-center inset-0">
+
+            <div style={{ border: "2px solid red" }} className="bg-white p-6 rounded-lg w-full max-w-md shadow-xl">
+                <h2 className="text-lg font-semibold mb-4">Product bewerken</h2>
+                <form onSubmit={handleSubmit} className="space-y-4">
+                    <input
+                        type="text"
+                        name="name"
+                        value={formData.name || ""}
+                        onChange={handleChange}
+                        className="w-full border rounded p-2"
+                        placeholder="Naam"
+                    ></input>
+                    <input
+                        type="number"
+                        name="price"
+                        value={formData.price || ""}
+                        onChange={handleChange}
+                        className="w-full border rounded p-2"
+                        placeholder="Prijs"
+                    ></input>
+                    <input
+                        type="text"
+                        name="image_url"
+                        value={formData.image_url || ""}
+                        onChange={handleChange}
+                        className="w-full border rounded p-2"
+                        placeholder="Afbeeldings-URL"
+                    ></input>
+                    <div className="flex justify-end gap-2">
+                        <button type="button" onClick={onCancel} className="px-4 py-2 bg-gray-200 rounded">
+                            Annuleren
+                        </button>
+                        <button type="submit" className="px-4 py-2 bg-blue-600 text-white rounded">
+                            Opslaan
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    );
+}
+
 export default function ProductList() {
     const [products, setProducts] = useState([]);
+    const [editableProduct, setEditableProduct] = useState(null); // Houd bij welk product wordt bewerkt
 
     useEffect(() => {
+        fetchProducts();
+    }, []);
+
+    const fetchProducts = () => {
         fetch("http://145.24.223.203:80/products")
             .then((res) => res.json())
             .then((data) => setProducts(data.data.products))
             .catch((err) => console.error("Fout bij ophalen producten:", err));
-    }, []);
+    };
+
+    function handleEditClick(product) {
+        console.log("Clicked product for editing:", product);
+        setEditableProduct(product); // Stel het te bewerken product in
+    }
+
+    const handleSave = (updatedProduct) => {
+        fetch(`http://145.24.223.203:80/products/${updatedProduct._id}`, {
+            method: "PUT",
+            headers: {
+                "Content-Type": "application/json",
+            },
+            body: JSON.stringify(updatedProduct),
+        })
+            .then((res) => res.json())
+            .then(() => {
+                setEditableProduct(null); // Sluit de popup
+                fetchProducts(); // Refresh product list
+            })
+            .catch((err) => console.error("Fout bij opslaan product:", err));
+    };
+
+    const handleCancelEdit = () => {
+        setEditableProduct(null); // Sluit de popup
+    };
 
     return (
         <div className="flex flex-col w-full bg-white rounded-xl shadow-lg p-4 relative">
