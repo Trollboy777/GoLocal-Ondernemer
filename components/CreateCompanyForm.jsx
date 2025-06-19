@@ -1,6 +1,6 @@
 // src/CreateCompanyForm.jsx
 import React, { useEffect, useState } from "react";
-import { Camera, Plus, X } from 'lucide-react'; // Importeer iconen voor afbeelding en tags
+import { Camera, Plus, X } from 'lucide-react';
 
 // JWT token helper
 function getUserIdFromToken() {
@@ -53,13 +53,11 @@ export default function CreateCompanyForm() {
                 console.error("Fout bij ophalen categorieën:", error);
             }
         }
-
         fetchCategories();
     }, []);
 
-    // Standaard Tailwind classes voor inputvelden
     const inputClasses = "w-full bg-blue-50 p-3 rounded-lg border border-transparent focus:outline-none focus:ring-2 focus:ring-blue-400";
-    const labelClasses = "font-medium text-gray-700 mb-1 block"; // Toegevoegd voor labels
+    const labelClasses = "font-medium text-gray-700 mb-1 block";
     const sectionTitleClasses = "text-lg font-semibold text-gray-800 mb-3 border-b border-gray-200 pb-2";
 
     // 🟢 Fetch bedrijf van huidige gebruiker
@@ -170,8 +168,7 @@ export default function CreateCompanyForm() {
 
     const handleSubmit = async () => {
         const bodyData = { ...formData };
-        delete bodyData.tagInput; // Verwijder tagInput voor de API call
-        // Zorg ervoor dat lege contact en open_times objecten worden verwijderd als ze niet nodig zijn of leeg zijn
+        delete bodyData.tagInput;
         if (Object.values(bodyData.contact).every(x => x === '')) delete bodyData.contact;
         if (Object.values(bodyData.open_times).every(x => x === '')) delete bodyData.open_times;
         if (Object.values(bodyData.adress.coordinates).every(x => x === '')) delete bodyData.adress.coordinates;
@@ -246,8 +243,43 @@ export default function CreateCompanyForm() {
                         </select>
                     </div>
                 </div>
+        // Deze buitenste div krijgt nu de styling van de kolomkop en de algemene padding
+        <div className="flex flex-col h-full"> {/* h-full om de hoogte van de parent (Layout) te vullen */}
+            <h2 className="text-2xl font-bold mb-4 px-6 pt-6 text-gray-800 border-b-2 border-blue-500 pb-2 inline-block">
+                Bedrijfsinformatie
+            </h2>
 
-                <div className="space-y-4"> {/* Tags sectie */}
+            {/* Deze div is het scrollbare gedeelte van het formulier */}
+            <div className="flex-1 bg-gray-50 px-6 py-4 overflow-y-auto space-y-4"> {/* `flex-1` zorgt dat het de resterende ruimte inneemt */}
+                <div className="space-y-4">
+                    <h3 className={sectionTitleClasses}>Algemene Informatie</h3>
+                    <div>
+                        <label htmlFor="name" className={labelClasses}>Bedrijfsnaam:</label>
+                        <input id="name" name="name" placeholder="Naam" value={formData.name} onChange={handleChange} className={inputClasses} />
+                    </div>
+                    <div>
+                        <label htmlFor="description" className={labelClasses}>Beschrijving:</label>
+                        <div className="relative flex items-center">
+                            <input id="description" name="description" placeholder="Beschrijving" value={formData.description} onChange={handleChange} className={inputClasses + " pr-10"} />
+                            <Camera className="absolute right-3 text-gray-400 w-5 h-5" />
+                        </div>
+                    </div>
+                    <div>
+                        <label htmlFor="image_url" className={labelClasses}>Afbeelding URL:</label>
+                        <input id="image_url" name="image_url" placeholder="Afbeelding URL" value={formData.image_url} onChange={handleChange} className={inputClasses} />
+                    </div>
+                    <div>
+                        <label htmlFor="category" className={labelClasses}>Categorie:</label>
+                        <select id="category" name="category_id" value={formData.category_id} onChange={handleChange} className={inputClasses}>
+                            <option value="">Selecteer een categorie</option>
+                            {categories.map((cat) => (
+                                <option key={cat._id} value={cat._id}>{cat.name}</option>
+                            ))}
+                        </select>
+                    </div>
+                </div>
+
+                <div className="space-y-4">
                     <h3 className={sectionTitleClasses}>Tags</h3>
                     <div className="flex items-center gap-2">
                         <input
@@ -274,7 +306,7 @@ export default function CreateCompanyForm() {
                     </div>
                 </div>
 
-                <div className="space-y-4"> {/* Adres sectie */}
+                <div className="space-y-4">
                     <h3 className={sectionTitleClasses}>Adres</h3>
                     <div>
                         <label htmlFor="street" className={labelClasses}>Straat:</label>
@@ -288,7 +320,7 @@ export default function CreateCompanyForm() {
                         <label htmlFor="city" className={labelClasses}>Stad:</label>
                         <input id="city" name="city" placeholder="Stad" value={formData.adress.city} onChange={handleAdressChange} className={inputClasses} />
                     </div>
-                    <div className="grid grid-cols-3 gap-3"> {/* Coordinates in 3 kolommen */}
+                    <div className="grid grid-cols-3 gap-3">
                         <div>
                             <label htmlFor="x_coord" className={labelClasses}>X (lat):</label>
                             <input id="x_coord" name="x" placeholder="X (lat)" value={formData.adress.coordinates.x} onChange={handleCoordinateChange} className={inputClasses} />
@@ -304,7 +336,7 @@ export default function CreateCompanyForm() {
                     </div>
                 </div>
 
-                <div className="space-y-4"> {/* Contact sectie (nieuw in formData) */}
+                <div className="space-y-4">
                     <h3 className={sectionTitleClasses}>Contact</h3>
                     <div>
                         <label htmlFor="email" className={labelClasses}>E-mail:</label>
@@ -316,7 +348,7 @@ export default function CreateCompanyForm() {
                     </div>
                 </div>
 
-                <div className="space-y-4"> {/* Openingstijden sectie */}
+                <div className="space-y-4">
                     <h3 className={sectionTitleClasses}>Openingstijden</h3>
                     {Object.keys(formData.open_times).map((day) => (
                         <div key={day}>
@@ -339,11 +371,17 @@ export default function CreateCompanyForm() {
                 >
                     {editMode ? 'Bedrijf Bewerken' : 'Bedrijf Aanmaken'}
                 </button>
+                <button
+                    onClick={handleSubmit}
+                    className="w-full mt-6 bg-blue-700 text-white p-3 rounded-lg font-semibold hover:bg-blue-800 transition-colors shadow-md"
+                >
+                    Opslaan
+                </button>
+            </div>
 
-                {/* Preview op de telefoon voor Bedrijfsinformatie */}
-                <div className="border-t pt-2 mt-4 text-center text-gray-500 text-sm">
-                    Preview op de telefoon
-                </div>
+            {/* Preview op de telefoon voor Bedrijfsinformatie */}
+            <div className="border-t pt-2 mt-4 text-center text-gray-500 text-sm px-4 pb-4"> {/* Padding toegevoegd */}
+                Preview op de telefoon
             </div>
         </div>
     );
