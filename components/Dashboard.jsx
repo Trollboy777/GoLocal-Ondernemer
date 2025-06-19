@@ -1,35 +1,35 @@
+// src/Layout.jsx
 import React from "react";
 import CreateCompanyForm from "./CreateCompanyForm.jsx";
 import ProductList from "./ProductList.jsx";
+import AccountForm from "./AccountForm.jsx"; // Nieuw component
 
 export default function Layout() {
     return (
-        <div className="flex h-screen w-full bg-white p-4 gap-4">
-            {/* Producten */}
-            <div className="flex flex-col w-1/3 bg-white rounded-xl shadow p-4 border-r border-gray-400"> {/* Gewijzigd naar border-gray-400 */}
+        // Hoofdcontainer: bg-white, px-4 (of meer/minder naar smaak), gap-4
+        // Voeg een lichte schaduw toe aan de container zelf als basis voor het "frame"
+        <div className="flex h-screen w-full bg-white p-4 gap-6"> {/* p-4 voor algemene padding, gap-6 voor ruimere kolomscheiding */}
+
+            {/* Producten Kolom */}
+            {/* Achtergrond van de kolom zelf is lichtgrijs, shadow-md, overflow-hidden */}
+            <div className="flex flex-col w-1/3 bg-gray-50 rounded-xl shadow-md overflow-hidden">
                 <ProductList />
             </div>
 
-            {/* Bedrijfsinformatie */}
-            <div className="flex flex-col w-1/3 bg-white rounded-xl shadow p-4 border-r border-gray-400"> {/* Gewijzigd naar border-gray-400 */}
-                <h2 className="text-xl font-semibold mb-4">Bedrijfsinformatie</h2>
-                <div className="flex-1 bg-blue-50 rounded-lg p-4 mb-4">
-                    <CreateCompanyForm />
-                </div>
-                <div className="border-t pt-2 text-center text-gray-500">
-                    Preview op de telefoon
-                </div>
+            {/* Bedrijfsinformatie Kolom */}
+            {/* Deze kolom zelf is flex-col en vult 1/3 breedte.
+                De inhoud (CreateCompanyForm) moet de rest van de ruimte vullen en zelf scrollbaar zijn.
+                Verwijder de extra, geneste div met w-1/3 etc.
+                De titel voor Bedrijfsinformatie is nu IN CreateCompanyForm.jsx verplaatst, net als bij ProductList.
+            */}
+            <div className="flex flex-col w-1/3 bg-gray-50 rounded-xl shadow-md overflow-hidden">
+                <CreateCompanyForm />
             </div>
 
-            {/* Accountinformatie */}
-            <div className="flex flex-col w-1/3 bg-white rounded-xl shadow p-4">
-                <h2 className="text-xl font-semibold mb-4">Accountinformatie</h2>
-                <div className="flex-1 bg-blue-50 rounded-lg p-4 mb-4">
-                    {/* account form */}
-                </div>
-                <div className="border-t pt-2 text-center text-gray-500">
-                    Preview op de telefoon
-                </div>
+            {/* Accountinformatie Kolom */}
+            {/* Achtergrond van de kolom zelf is lichtgrijs, shadow-md, overflow-hidden */}
+            <div className="flex flex-col w-1/3 bg-gray-50 rounded-xl shadow-md overflow-hidden">
+                <AccountForm />
             </div>
         </div>
     );
