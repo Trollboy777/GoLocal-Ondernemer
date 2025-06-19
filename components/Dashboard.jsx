@@ -1,3 +1,4 @@
+// src/Layout.jsx
 import React from "react";
 import CreateCompanyForm from "./CreateCompanyForm.jsx";
 import ProductList from "./ProductList.jsx";
@@ -10,26 +11,25 @@ export default function Layout() {
         <div className="flex h-screen w-full bg-white p-4 gap-6"> {/* p-4 voor algemene padding, gap-6 voor ruimere kolomscheiding */}
 
             {/* Producten Kolom */}
-            {/* Achtergrond van de kolom zelf is lichtgrijs, geen border-r */}
-            <div className="flex flex-col w-1/3 bg-gray-50 rounded-xl shadow-md overflow-hidden"> {/* overflow-hidden voor ronde hoeken bij scroll */}
+            {/* Achtergrond van de kolom zelf is lichtgrijs, shadow-md, overflow-hidden */}
+            <div className="flex flex-col w-1/3 bg-gray-50 rounded-xl shadow-md overflow-hidden">
                 <ProductList />
             </div>
 
             {/* Bedrijfsinformatie Kolom */}
-            {/* Achtergrond van de kolom zelf is lichtgrijs, geen border-r */}
-            <div className="flex flex-col w-1/3 bg-gray-50 rounded-xl shadow-md overflow-hidden"> {/* overflow-hidden voor ronde hoeken bij scroll */}
-                <div className="p-6"> {/* Padding toegevoegd voor inhoud Bedrijfsinformatie */}
-                    <h2 className="text-2xl font-semibold mb-6 text-gray-800">Bedrijfsinformatie</h2> {/* Titelstijl uit afbeelding */}
-                    <CreateCompanyForm />
-                </div>
-                {/* De "Preview op de telefoon" verplaatst naar aparte div in CreateCompanyForm voor styling */}
-                {/* Omdat CreateCompanyForm zelf al een aparte div is, hoeft dit hier niet dubbel */}
+            {/* Deze kolom zelf is flex-col en vult 1/3 breedte.
+                De inhoud (CreateCompanyForm) moet de rest van de ruimte vullen en zelf scrollbaar zijn.
+                Verwijder de extra, geneste div met w-1/3 etc.
+                De titel voor Bedrijfsinformatie is nu IN CreateCompanyForm.jsx verplaatst, net als bij ProductList.
+            */}
+            <div className="flex flex-col w-1/3 bg-gray-50 rounded-xl shadow-md overflow-hidden">
+                <CreateCompanyForm />
             </div>
 
             {/* Accountinformatie Kolom */}
-            {/* Achtergrond van de kolom zelf is lichtgrijs */}
-            <div className="flex flex-col w-1/3 bg-gray-50 rounded-xl shadow-md overflow-hidden"> {/* overflow-hidden voor ronde hoeken bij scroll */}
-                <AccountForm /> {/* AccountForm component hier plaatsen */}
+            {/* Achtergrond van de kolom zelf is lichtgrijs, shadow-md, overflow-hidden */}
+            <div className="flex flex-col w-1/3 bg-gray-50 rounded-xl shadow-md overflow-hidden">
+                <AccountForm />
             </div>
         </div>
     );
