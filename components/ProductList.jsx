@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from "react";
-import { Pencil, Trash2, Plus } from "lucide-react";
+import { Pencil, Trash2, Plus } from "lucide-react"; // Importeer 'Plus' icon
 
 export default function ProductList() {
     const [products, setProducts] = useState([]);
