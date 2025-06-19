@@ -1,7 +1,6 @@
 import React, { useEffect, useState } from "react";
 import { Camera, Plus, X } from 'lucide-react';
 
-// JWT token helper
 function getUserIdFromToken() {
     try {
         const token = localStorage.getItem('token');
@@ -27,6 +26,7 @@ export default function CreateCompanyForm() {
         tagInput: '',
         tag: [],
         adress: {
+            coordinates: { x: '', y: '', z: '' },
             zipcode: '',
             street: '',
             city: ''
@@ -37,7 +37,6 @@ export default function CreateCompanyForm() {
         }
     });
 
-    // Fetch categorieën
     useEffect(() => {
         async function fetchCategories() {
             try {
@@ -51,16 +50,13 @@ export default function CreateCompanyForm() {
         fetchCategories();
     }, []);
 
-    // Tailwind CSS classes for consistent styling
     const inputClasses = "w-full bg-blue-50 p-3 rounded-lg border border-transparent focus:outline-none focus:ring-2 focus:ring-blue-400";
     const labelClasses = "font-medium text-gray-700 mb-1 block";
     const sectionTitleClasses = "text-lg font-semibold text-gray-800 mb-3 border-b border-gray-200 pb-2";
 
-    // 🟢 Fetch bedrijf van huidige gebruiker
     useEffect(() => {
         async function fetchOwnCompany() {
             try {
-                console.log('Fetching own company...');
                 const response = await fetch('http://145.24.223.203:80/companies', {
                     method: 'GET',
                     headers: {
@@ -78,25 +74,23 @@ export default function CreateCompanyForm() {
 
                 if (myCompany) {
                     setFormData(prev => {
-                        // Ensure 'adress' structure, excluding coordinates
                         const updatedAdress = {
-                            ...prev.adress, // Start with existing/default address properties
-                            ...(myCompany.adress || {}) // Overlay properties from myCompany.adress
+                            ...prev.adress,
+                            ...(myCompany.adress || {})
                         };
-                        // Ensure no 'coordinates' property remains from fetched data
-                        delete updatedAdress.coordinates;
+                        if (!updatedAdress.coordinates) {
+                            updatedAdress.coordinates = { x: '', y: '', z: '' };
+                        }
 
                         return {
-                            ...prev, // Keep all previous state as a base
-                            ...myCompany, // Overlay top-level properties from myCompany
-                            tagInput: '', // Always reset tagInput
-
-                            adress: updatedAdress, // Use the carefully constructed address object
+                            ...prev,
+                            ...myCompany,
+                            tagInput: '',
+                            adress: updatedAdress,
                             open_times: {
                                 ...prev.open_times,
-                                ...(myCompany.open_times || {}) // Merge or default to an empty object
+                                ...(myCompany.open_times || {})
                             }
-                            // 'contact' is intentionally excluded
                         };
                     });
                     setCompany_id(myCompany._id);
@@ -110,7 +104,6 @@ export default function CreateCompanyForm() {
         fetchOwnCompany();
     }, []);
 
-    // Handlers
     const handleChange = (e) => {
         const { name, value } = e.target;
         setFormData(prev => ({ ...prev, [name]: value }));
@@ -127,7 +120,19 @@ export default function CreateCompanyForm() {
         }));
     };
 
-    // handleCoordinateChange is removed
+    const handleCoordinateChange = (e) => {
+        const { name, value } = e.target;
+        setFormData(prev => ({
+            ...prev,
+            adress: {
+                ...prev.adress,
+                coordinates: {
+                    ...prev.adress.coordinates,
+                    [name]: value
+                }
+            }
+        }));
+    };
 
     const handleOpenTimeChange = (day, value) => {
         setFormData(prev => ({
@@ -160,12 +165,9 @@ export default function CreateCompanyForm() {
         const bodyData = { ...formData };
         delete bodyData.tagInput;
 
-        // Remove open_times if all values are empty
         if (Object.values(bodyData.open_times).every(x => x === '')) {
             delete bodyData.open_times;
         }
-
-        // Removed coordinate-related deletion logic
 
         const method = editMode ? 'PATCH' : 'POST';
         const url = editMode
@@ -199,7 +201,6 @@ export default function CreateCompanyForm() {
         }
     };
 
-    // UI
     return (
         <div className="flex flex-col h-full">
             <h2 className="text-2xl font-bold mb-4 px-6 pt-6 text-gray-800 border-b-2 border-blue-500 pb-2 inline-block">
@@ -209,30 +210,15 @@ export default function CreateCompanyForm() {
             <div className="flex-1 bg-gray-50 px-6 py-4 overflow-y-auto space-y-4">
                 <div className="space-y-4">
                     <h3 className={sectionTitleClasses}>Algemene Informatie</h3>
-                    <div>
-                        <label htmlFor="name" className={labelClasses}>Bedrijfsnaam:</label>
-                        <input id="name" name="name" placeholder="Naam" value={formData.name} onChange={handleChange} className={inputClasses} />
-                    </div>
-                    <div>
-                        <label htmlFor="description" className={labelClasses}>Beschrijving:</label>
-                        <div className="relative flex items-center">
-                            <input id="description" name="description" placeholder="Beschrijving" value={formData.description} onChange={handleChange} className={inputClasses + " pr-10"} />
-                            <Camera className="absolute right-3 text-gray-400 w-5 h-5" />
-                        </div>
-                    </div>
-                    <div>
-                        <label htmlFor="image_url" className={labelClasses}>Afbeelding URL:</label>
-                        <input id="image_url" name="image_url" placeholder="Afbeelding URL" value={formData.image_url} onChange={handleChange} className={inputClasses} />
-                    </div>
-                    <div>
-                        <label htmlFor="category" className={labelClasses}>Categorie:</label>
-                        <select id="category" name="category_id" value={formData.category_id} onChange={handleChange} className={inputClasses}>
-                            <option value="">Selecteer een categorie</option>
-                            {categories.map((cat) => (
-                                <option key={cat._id} value={cat._id}>{cat.name}</option>
-                            ))}
-                        </select>
-                    </div>
+                    <input name="name" placeholder="Naam" value={formData.name} onChange={handleChange} className={inputClasses} />
+                    <input name="description" placeholder="Beschrijving" value={formData.description} onChange={handleChange} className={inputClasses} />
+                    <input name="image_url" placeholder="Afbeelding URL" value={formData.image_url} onChange={handleChange} className={inputClasses} />
+                    <select name="category_id" value={formData.category_id} onChange={handleChange} className={inputClasses}>
+                        <option value="">Selecteer een categorie</option>
+                        {categories.map((cat) => (
+                            <option key={cat._id} value={cat._id}>{cat.name}</option>
+                        ))}
+                    </select>
                 </div>
 
                 <div className="space-y-4">
@@ -264,19 +250,12 @@ export default function CreateCompanyForm() {
 
                 <div className="space-y-4">
                     <h3 className={sectionTitleClasses}>Adres</h3>
-                    <div>
-                        <label htmlFor="street" className={labelClasses}>Straat:</label>
-                        <input id="street" name="street" placeholder="Straat" value={formData.adress.street} onChange={handleAdressChange} className={inputClasses} />
-                    </div>
-                    <div>
-                        <label htmlFor="zipcode" className={labelClasses}>Postcode:</label>
-                        <input id="zipcode" name="zipcode" placeholder="Postcode" value={formData.adress.zipcode} onChange={handleAdressChange} className={inputClasses} />
-                    </div>
-                    <div>
-                        <label htmlFor="city" className={labelClasses}>Stad:</label>
-                        <input id="city" name="city" placeholder="Stad" value={formData.adress.city} onChange={handleAdressChange} className={inputClasses} />
-                    </div>
-                    {/* Coordinate fields are removed */}
+                    <input name="street" placeholder="Straat" value={formData.adress.street} onChange={handleAdressChange} className={inputClasses} />
+                    <input name="zipcode" placeholder="Postcode" value={formData.adress.zipcode} onChange={handleAdressChange} className={inputClasses} />
+                    <input name="city" placeholder="Stad" value={formData.adress.city} onChange={handleAdressChange} className={inputClasses} />
+                    <input name="x" placeholder="X (lat)" value={formData.adress.coordinates.x} onChange={handleCoordinateChange} className={inputClasses} />
+                    <input name="y" placeholder="Y (lon)" value={formData.adress.coordinates.y} onChange={handleCoordinateChange} className={inputClasses} />
+                    <input name="z" placeholder="Z (hoogte)" value={formData.adress.coordinates.z} onChange={handleCoordinateChange} className={inputClasses} />
                 </div>
 
                 <div className="space-y-4">
@@ -303,7 +282,6 @@ export default function CreateCompanyForm() {
                 </button>
             </div>
 
-            {/* Preview op de telefoon voor Bedrijfsinformatie */}
             <div className="border-t pt-2 mt-4 text-center text-gray-500 text-sm px-4 pb-4">
                 Preview op de telefoon
             </div>
