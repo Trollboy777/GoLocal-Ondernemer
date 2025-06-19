@@ -1,13 +1,12 @@
-// src/ProductList.jsx
-import React, { useEffect, useState } from "react";
-import { Pencil, Trash2, Plus } from "lucide-react"; // Importeer 'Plus' icon
 
-// Popup component voor bewerken (verplaatst naar hier voor overzicht, of apart bestand)
+import React, { useEffect, useState } from "react";
+import { Pencil, Trash2, Plus } from "lucide-react";
+
 function ProductEditPopup({ product, onCancel, onSave }) {
     const [formData, setFormData] = useState(product);
 
     useEffect(() => {
-        // Zorg ervoor dat de state wordt bijgewerkt als 'product' verandert (bijv. bij openen popup voor ander product)
+
         setFormData(product);
     }, [product]);
 
@@ -17,11 +16,11 @@ function ProductEditPopup({ product, onCancel, onSave }) {
 
     const handleSubmit = (e) => {
         e.preventDefault();
-        onSave(formData); // Sla de wijzigingen op
+        onSave(formData);
     };
 
     return (
-        // Overlay voor de popup
+
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
             <div className="bg-white rounded-lg shadow-xl p-6 w-full max-w-md mx-auto">
                 <h2 className="text-2xl font-bold mb-6 text-gray-800">Product bewerken</h2> {/* Aangepaste titelstijl */}
@@ -67,7 +66,7 @@ function ProductEditPopup({ product, onCancel, onSave }) {
 
 export default function ProductList() {
     const [products, setProducts] = useState([]);
-    const [editableProduct, setEditableProduct] = useState(null); // Houd bij welk product wordt bewerkt
+    const [editableProduct, setEditableProduct] = useState(null);
 
     useEffect(() => {
         fetchProducts();
@@ -81,7 +80,7 @@ export default function ProductList() {
     };
 
     function handleEditClick(product) {
-        setEditableProduct(product); // Stel het te bewerken product in
+        setEditableProduct(product);
     }
 
     const handleSave = (updatedProduct) => {
@@ -94,17 +93,16 @@ export default function ProductList() {
         })
             .then((res) => res.json())
             .then(() => {
-                setEditableProduct(null); // Sluit de popup
-                fetchProducts(); // Refresh product list
+                setEditableProduct(null);
+                fetchProducts();
             })
             .catch((err) => console.error("Fout bij opslaan product:", err));
     };
 
     const handleCancelEdit = () => {
-        setEditableProduct(null); // Sluit de popup
+        setEditableProduct(null);
     };
 
-    // Functie voor verwijderen (voorbeeld, implementeer de API call)
     const handleDeleteClick = (productId) => {
         if (window.confirm("Weet je zeker dat je dit product wilt verwijderen?")) {
             fetch(`http://145.24.223.203:80/products/${productId}`, {
@@ -112,7 +110,7 @@ export default function ProductList() {
             })
                 .then(res => {
                     if (res.ok) {
-                        fetchProducts(); // Refresh lijst na verwijdering
+                        fetchProducts();
                     } else {
                         console.error("Fout bij verwijderen product");
                     }
@@ -128,7 +126,7 @@ export default function ProductList() {
                 Producten
             </h2>
 
-            <div className="flex-1 bg-gray-50 px-6 py-4 overflow-y-auto space-y-4"> {/* Achtergrond van de scrollbare lijst naar de kolom achtergrond */}
+            <div className="flex-1  px-6 py-4 overflow-y-auto space-y-4"> {/* Achtergrond van de scrollbare lijst naar de kolom achtergrond */}
                 {products.map((product) => (
                     <div
                         key={product._id}

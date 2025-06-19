@@ -1,3 +1,4 @@
+// src/CreateCompanyForm.jsx
 import React, { useEffect, useState } from "react";
 import { Camera, Plus, X } from 'lucide-react';
 
@@ -108,7 +109,6 @@ export default function CreateCompanyForm() {
         const { name, value } = e.target;
         setFormData(prev => ({ ...prev, [name]: value }));
     };
-
     const handleAdressChange = (e) => {
         const { name, value } = e.target;
         setFormData(prev => ({
@@ -183,9 +183,7 @@ export default function CreateCompanyForm() {
                 },
                 body: JSON.stringify(bodyData)
             });
-
             const data = await response.json();
-
             if (response.ok) {
                 alert(editMode ? "Bedrijf succesvol bijgewerkt" : "Bedrijf succesvol toegevoegd");
                 if (!editMode) {
