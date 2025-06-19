@@ -38,9 +38,10 @@ export default function AccountForm() {
     const saveButtonClasses = "w-full mt-4 bg-blue-700 text-white p-3 rounded-lg font-semibold hover:bg-blue-800 transition-colors shadow-md";
 
     return (
-        <div className="flex flex-col h-full bg-gray-50 rounded-xl overflow-hidden">
-            {/* Header van Accountinformatie */}
-
+        <div className="flex flex-col h-full rounded-xl overflow-hidden">
+            <h2 className="text-2xl font-bold mb-4 px-6 pt-6 text-gray-800 border-b-2 border-blue-500 pb-2 inline-block">
+                Account informatie
+            </h2>
 
             {/* Profielfoto en Naam */}
             <div className="flex flex-col items-center p-6 pb-4">
@@ -50,7 +51,6 @@ export default function AccountForm() {
                 </div>
                 <h3 className="text-xl font-bold mt-3 text-gray-800">Gebruikersnaam</h3> {/* Naam of gebruikersnaam */}
                 <p className="text-sm text-gray-500">Email@voorbeeld.com</p> {/* E-mailadres */}
-                <button className="text-blue-600 text-sm font-semibold mt-2 hover:underline">Bewerk profiel</button>
             </div>
 
             {/* Accountinstellingen formulier */}
@@ -104,6 +104,12 @@ export default function AccountForm() {
                 <div className="pt-4 border-t border-gray-200 text-center">
                     <button className="text-red-500 font-semibold hover:text-red-700 transition-colors flex items-center justify-center mx-auto gap-2">
                         <LogOut className="w-5 h-5" /> Uitloggen
+                    </button>
+                </div>
+
+                <div className="pt-4 border-t border-gray-200 text-center">
+                    <button className="bg-red-500 text-white font-semibold hover:bg-red-600 transition-colors flex items-center justify-center mx-auto gap-2 px-4 py-2 rounded">
+                        <LogOut className="w-5 h-5" /> Account verwijderen
                     </button>
                 </div>
             </div>

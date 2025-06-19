@@ -98,11 +98,11 @@ export default function CreateCompanyForm() {
         // Deze buitenste div krijgt nu de styling van de kolomkop en de algemene padding
         <div className="flex flex-col h-full"> {/* h-full om de hoogte van de parent (Layout) te vullen */}
             <h2 className="text-2xl font-bold mb-4 px-6 pt-6 text-gray-800 border-b-2 border-blue-500 pb-2 inline-block">
-                Bedrijfsinformatie
+                Bedrijfs informatie
             </h2>
 
             {/* Deze div is het scrollbare gedeelte van het formulier */}
-            <div className="flex-1 bg-gray-50 px-6 py-4 overflow-y-auto space-y-4"> {/* `flex-1` zorgt dat het de resterende ruimte inneemt */}
+            <div className="flex-1 px-6 py-4 overflow-y-auto space-y-4"> {/* `flex-1` zorgt dat het de resterende ruimte inneemt */}
                 <div className="space-y-4">
                     <h3 className={sectionTitleClasses}>Algemene Informatie</h3>
                     <div>

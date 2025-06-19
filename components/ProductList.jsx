@@ -128,7 +128,7 @@ export default function ProductList() {
                 Producten
             </h2>
 
-            <div className="flex-1 bg-gray-50 px-6 py-4 overflow-y-auto space-y-4"> {/* Achtergrond van de scrollbare lijst naar de kolom achtergrond */}
+            <div className="flex-1  px-6 py-4 overflow-y-auto space-y-4"> {/* Achtergrond van de scrollbare lijst naar de kolom achtergrond */}
                 {products.map((product) => (
                     <div
                         key={product._id}
