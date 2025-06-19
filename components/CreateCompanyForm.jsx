@@ -52,7 +52,6 @@ export default function CreateCompanyForm() {
     }, []);
 
     const inputClasses = "w-full bg-blue-50 p-3 rounded-lg border border-transparent focus:outline-none focus:ring-2 focus:ring-blue-400";
-    const labelClasses = "font-medium text-gray-700 mb-1 block";
     const sectionTitleClasses = "text-lg font-semibold text-gray-800 mb-3 border-b border-gray-200 pb-2";
 
     useEffect(() => {
