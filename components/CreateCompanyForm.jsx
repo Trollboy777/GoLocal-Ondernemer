@@ -1,6 +1,23 @@
 import React, { useEffect, useState } from "react";
 
+// JWT token helper
+function getUserIdFromToken() {
+    try {
+        const token = localStorage.getItem('token');
+        if (!token) return null;
+        const payload = JSON.parse(atob(token.split('.')[1]));
+        return payload.id;
+    } catch (e) {
+        console.error('Token decoding failed:', e);
+        return null;
+    }
+}
+
 export default function CreateCompanyForm() {
+    const [editMode, setEditMode] = useState(false);
+    const [company_id, setCompany_id] = useState(null);
+    const [categories, setCategories] = useState([]);
+
     const [formData, setFormData] = useState({
         name: '',
         description: '',
@@ -20,8 +37,16 @@ export default function CreateCompanyForm() {
         }
     });
 
-    const [categories, setCategories] = useState([]);
+    const inputStyle = {
+        backgroundColor: '#E6F4FF',
+        padding: '10px',
+        borderRadius: '8px',
+        border: '1px solid #ccc',
+        marginBottom: '10px',
+        width: '100%'
+    };
 
+    // Fetch categorieën
     useEffect(() => {
         async function fetchCategories() {
             try {
@@ -36,15 +61,44 @@ export default function CreateCompanyForm() {
         fetchCategories();
     }, []);
 
-    const inputStyle = {
-        backgroundColor: '#E6F4FF',
-        padding: '10px',
-        borderRadius: '8px',
-        border: '1px solid #ccc',
-        marginBottom: '10px',
-        width: '100%'
-    };
+    // 🟢 Fetch bedrijf van huidige gebruiker
+    useEffect(() => {
+        async function fetchOwnCompany() {
+            try {
+                console.log('PATCH naar bedrijf:', company_id);
+                const response = await fetch('http://145.24.223.203:80/companies', {
+                    method: 'GET',
+                    headers: {
+                        'Authorization': 'Bearer ' + localStorage.getItem('token')
+                    }
+                });
 
+                const data = await response.json();
+                const userId = getUserIdFromToken();
+
+                const myCompany = data.data.companies.find((comp) => {
+                    const compUserId = Array.isArray(comp.user_id) ? comp.user_id[0] : comp.user_id;
+                    return compUserId === userId;
+                });
+
+                if (myCompany) {
+                    setFormData(prev => ({
+                        ...prev,
+                        ...myCompany,
+                        tagInput: '',
+                    }));
+                    setCompany_id(myCompany._id);
+                    setEditMode(true);
+                }
+            } catch (err) {
+                console.error('Fout bij ophalen eigen bedrijf:', err);
+            }
+        }
+
+        fetchOwnCompany();
+    }, []);
+
+    // Handlers
     const handleChange = (e) => {
         const { name, value } = e.target;
         setFormData(prev => ({ ...prev, [name]: value }));
@@ -106,9 +160,14 @@ export default function CreateCompanyForm() {
         const bodyData = { ...formData };
         delete bodyData.tagInput;
 
+        const method = editMode ? 'PATCH' : 'POST';
+        const url = editMode
+            ? `http://145.24.223.203:80/companies/${company_id}`
+            : 'http://145.24.223.203:80/companies';
+
         try {
-            const response = await fetch('http://145.24.223.203:80/companies', {
-                method: 'POST',
+            const response = await fetch(url, {
+                method: method,
                 headers: {
                     'Content-Type': 'application/json',
                     'Authorization': 'Bearer ' + localStorage.getItem('token')
@@ -119,8 +178,11 @@ export default function CreateCompanyForm() {
             const data = await response.json();
 
             if (response.ok) {
-                alert('Bedrijf succesvol aangemaakt!');
-                console.log(data);
+                alert(editMode ? "Bedrijf succesvol bijgewerkt" : "Bedrijf succesvol toegevoegd");
+                if (!editMode) {
+                    setEditMode(true);
+                    setCompany_id(data.data.company._id);
+                }
             } else {
                 alert(data.message || 'Fout bij aanmaken bedrijf');
             }
@@ -130,9 +192,12 @@ export default function CreateCompanyForm() {
         }
     };
 
+    // UI
     return (
         <div className="space-y-4 text-sm text-gray-700">
-            <h2 className="text-xl font-bold mb-2">Nieuw Bedrijf Aanmaken</h2>
+            <h2 className="text-xl font-bold mb-4">
+                {editMode ? 'Bedrijf Bewerken' : 'Nieuw Bedrijf Aanmaken'}
+            </h2>
 
             <input name="name" placeholder="Naam" value={formData.name} onChange={handleChange} style={inputStyle} />
             <input name="description" placeholder="Beschrijving" value={formData.description} onChange={handleChange} style={inputStyle} />
@@ -192,7 +257,7 @@ export default function CreateCompanyForm() {
                 onClick={handleSubmit}
                 className="w-full mt-4 bg-green-600 text-white p-2 rounded hover:bg-green-700"
             >
-                Bedrijf Aanmaken
+                {editMode ? 'Bedrijf Bewerken' : 'Bedrijf Aanmaken'}
             </button>
         </div>
     );
