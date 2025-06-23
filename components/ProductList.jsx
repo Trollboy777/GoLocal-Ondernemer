@@ -96,7 +96,7 @@ export default function ProductList() {
 
         console.log("Ophalen producten voor company_id:", companyId);
 
-        fetch(`http://145.24.223.203:80/products?company_id=${companyId}`, {
+        fetch(`http://145.24.223.203:80/products`, {
             headers: {
                 Authorization: `Bearer ${localStorage.getItem("token")}`,
             },
@@ -197,7 +197,9 @@ export default function ProductList() {
             </h2>
 
             <div className="flex-1 px-6 py-4 overflow-y-auto space-y-4">
-                {products.map((product) => (
+                {products
+                    .filter((product) => product.company_id === companyId || product.company_id?._id === companyId)
+                    .map((product) => (
                     <div
                         key={product._id}
                         className="flex items-center justify-between bg-white rounded-xl shadow-md p-4 border border-gray-100"
