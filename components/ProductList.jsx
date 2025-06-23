@@ -1,12 +1,23 @@
-
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useCallback } from "react";
 import { Pencil, Trash2, Plus } from "lucide-react";
+
+// Hulpfunctie: Haalt het user ID op uit de JWT-token
+function getUserIdFromToken() {
+    try {
+        const token = localStorage.getItem("token");
+        if (!token) return null;
+        const payload = JSON.parse(atob(token.split(".")[1]));
+        return payload.id;
+    } catch (e) {
+        console.error("Fout bij token decoding:", e);
+        return null;
+    }
+}
 
 function ProductEditPopup({ product, onCancel, onSave }) {
     const [formData, setFormData] = useState(product);
 
     useEffect(() => {
-
         setFormData(product);
     }, [product]);
 
@@ -20,17 +31,18 @@ function ProductEditPopup({ product, onCancel, onSave }) {
     };
 
     return (
-
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
             <div className="bg-white rounded-lg shadow-xl p-6 w-full max-w-md mx-auto">
-                <h2 className="text-2xl font-bold mb-6 text-gray-800">Product bewerken</h2> {/* Aangepaste titelstijl */}
+                <h2 className="text-2xl font-bold mb-6 text-gray-800">
+                    Product bewerken
+                </h2>
                 <form onSubmit={handleSubmit} className="space-y-4">
                     <input
                         type="text"
                         name="name"
                         value={formData.name || ""}
                         onChange={handleChange}
-                        className="w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-400" // Standaard inputstijl
+                        className="w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-400"
                         placeholder="Naam"
                     />
                     <input
@@ -50,10 +62,17 @@ function ProductEditPopup({ product, onCancel, onSave }) {
                         placeholder="Afbeeldings-URL"
                     />
                     <div className="flex justify-end gap-3 mt-6">
-                        <button type="button" onClick={onCancel} className="px-6 py-2 bg-gray-200 text-gray-800 rounded-lg font-semibold hover:bg-gray-300 transition-colors">
+                        <button
+                            type="button"
+                            onClick={onCancel}
+                            className="px-6 py-2 bg-gray-200 text-gray-800 rounded-lg font-semibold hover:bg-gray-300 transition-colors"
+                        >
                             Annuleren
                         </button>
-                        <button type="submit" className="px-6 py-2 bg-blue-600 text-white rounded-lg font-semibold hover:bg-blue-700 transition-colors">
+                        <button
+                            type="submit"
+                            className="px-6 py-2 bg-blue-600 text-white rounded-lg font-semibold hover:bg-blue-700 transition-colors"
+                        >
                             Opslaan
                         </button>
                     </div>
@@ -63,40 +82,91 @@ function ProductEditPopup({ product, onCancel, onSave }) {
     );
 }
 
-
 export default function ProductList() {
     const [products, setProducts] = useState([]);
     const [editableProduct, setEditableProduct] = useState(null);
+    const [companyId, setCompanyId] = useState(null);
 
-    useEffect(() => {
-        fetchProducts();
+    // Haalt producten op voor het bedrijf
+    const fetchProducts = useCallback((companyId) => {
+        if (!companyId) {
+            console.error("Geen company_id aanwezig bij het ophalen van producten.");
+            return;
+        }
+
+        console.log("Ophalen producten voor company_id:", companyId);
+
+        fetch(`http://145.24.223.203:80/products?company_id=${companyId}`, {
+            headers: {
+                Authorization: `Bearer ${localStorage.getItem("token")}`,
+            },
+        })
+            .then((res) => res.json())
+            .then((data) => {
+                if (data && data.data && data.data.products) {
+                    setProducts(data.data.products);
+                } else {
+                    console.error("Geen producten gevonden:", data);
+                }
+            })
+            .catch((err) => console.error("Fout bij ophalen producten:", err));
     }, []);
 
-    const fetchProducts = () => {
-        fetch("http://145.24.223.203:80/products")
-            .then((res) => res.json())
-            .then((data) => setProducts(data.data.products))
-            .catch((err) => console.error("Fout bij ophalen producten:", err));
-    };
+    // Haalt het bedrijf van de gebruiker op
+    const fetchUserCompany = useCallback(async () => {
+        try {
+            const response = await fetch("http://145.24.223.203:80/companies", {
+                headers: {
+                    Authorization: `Bearer ${localStorage.getItem("token")}`,
+                },
+            });
 
-    function handleEditClick(product) {
+            const data = await response.json();
+            const userId = getUserIdFromToken();
+
+            // Zoek het bedrijf dat hoort bij deze gebruiker
+            const userCompany = data.data.companies.find((company) =>
+                company.user_id.includes(userId)
+            );
+
+            if (userCompany) {
+                setCompanyId(userCompany._id);
+                fetchProducts(userCompany._id); // Haal de producten op voor dit bedrijf
+            } else {
+                console.error("Geen bedrijf gevonden voor deze gebruiker.");
+            }
+        } catch (err) {
+            console.error("Fout bij ophalen bedrijf:", err);
+        }
+    }, [fetchProducts]);
+
+    // useEffect om bedrijf en producten te laden
+    useEffect(() => {
+        (async () => {
+            await fetchUserCompany(); // Wacht expliciet op de Promise
+        })();
+    }, [fetchUserCompany]);
+
+    const handleEditClick = (product) => {
         setEditableProduct(product);
-    }
+    };
 
     const handleSave = (updatedProduct) => {
         fetch(`http://145.24.223.203:80/products/${updatedProduct._id}`, {
-            method: "PUT",
+            method: "PATCH",
             headers: {
                 "Content-Type": "application/json",
+                Authorization: `Bearer ${localStorage.getItem("token")}`,
             },
             body: JSON.stringify(updatedProduct),
         })
-            .then((res) => res.json())
             .then(() => {
                 setEditableProduct(null);
-                fetchProducts();
+                fetchProducts(companyId); // Hernieuw de productenlijst
             })
-            .catch((err) => console.error("Fout bij opslaan product:", err));
+            .catch((err) =>
+                console.error("Fout bij opslaan product:", err)
+            );
     };
 
     const handleCancelEdit = () => {
@@ -107,30 +177,30 @@ export default function ProductList() {
         if (window.confirm("Weet je zeker dat je dit product wilt verwijderen?")) {
             fetch(`http://145.24.223.203:80/products/${productId}`, {
                 method: "DELETE",
+                headers: {
+                    Authorization: `Bearer ${localStorage.getItem("token")}`,
+                },
             })
-                .then(res => {
-                    if (res.ok) {
-                        fetchProducts();
-                    } else {
-                        console.error("Fout bij verwijderen product");
-                    }
+                .then(() => {
+                    fetchProducts(companyId); // Vernieuw de lijst na verwijderen
                 })
-                .catch(err => console.error("Netwerkfout bij verwijderen:", err));
+                .catch((err) =>
+                    console.error("Fout bij verwijderen product:", err)
+                );
         }
     };
 
-
     return (
-        <div className="flex flex-col h-full relative"> {/* h-full om de hoogte van de parent (Layout) te vullen */}
+        <div className="flex flex-col h-full relative">
             <h2 className="text-2xl font-bold mb-4 px-6 pt-6 text-gray-800 border-b-2 border-blue-500 pb-2 inline-block">
                 Producten
             </h2>
 
-            <div className="flex-1  px-6 py-4 overflow-y-auto space-y-4"> {/* Achtergrond van de scrollbare lijst naar de kolom achtergrond */}
+            <div className="flex-1 px-6 py-4 overflow-y-auto space-y-4">
                 {products.map((product) => (
                     <div
                         key={product._id}
-                        className="flex items-center justify-between bg-white rounded-xl shadow-md p-4 border border-gray-100" // Wit met zeer lichte rand en shadow
+                        className="flex items-center justify-between bg-white rounded-xl shadow-md p-4 border border-gray-100"
                     >
                         <div className="flex items-center gap-4">
                             <img
@@ -172,13 +242,8 @@ export default function ProductList() {
 
             {/* Plus-knop */}
             <button className="absolute bottom-6 right-6 bg-blue-600 text-white p-4 rounded-full shadow-lg hover:bg-blue-700 transition-colors duration-200 flex items-center justify-center z-10">
-                <Plus className="w-8 h-8" /> {/* Groter Plus icon */}
+                <Plus className="w-8 h-8" />
             </button>
-
-            {/* Preview op de telefoon (vaste positie onderaan de lijst, binnen de ProductList div) */}
-            <div className="border-t pt-2 mt-4 text-center text-gray-500 text-sm px-4 pb-4"> {/* Padding toegevoegd */}
-                Preview op de telefoon
-            </div>
 
             {editableProduct && (
                 <ProductEditPopup
