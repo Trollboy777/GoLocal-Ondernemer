@@ -14,7 +14,7 @@ function getUserIdFromToken() {
     }
 }
 
-export default function CreateCompanyForm() {
+export default function CreateCompanyForm({onTitleClick}) {
     const [editMode, setEditMode] = useState(false);
     const [company_id, setCompany_id] = useState(null);
     const [categories, setCategories] = useState([]);
@@ -219,9 +219,14 @@ export default function CreateCompanyForm() {
 
     return (
         <div className="flex flex-col h-full">
-            <h2 className="text-2xl font-bold mb-4 px-6 pt-6 text-gray-800 border-b-2 border-blue-500 pb-2 inline-block">
-                {editMode ? 'Bedrijf Bewerken' : 'Nieuw Bedrijf Aanmaken'}
-            </h2>
+            <div
+                className="text-2xl font-bold mb-4 px-6 pt-6 text-gray-800 border-b-2 border-blue-500 pb-2 inline-block cursor-pointer"
+                onClick={onTitleClick} // <-- HIER IS DE VERANDERING
+            >
+                <h2 className="text-2xl font-bold mb-4 px-6 pt-6 text-gray-800">
+                    {editMode ? 'Bedrijf Bewerken' : 'Nieuw Bedrijf Aanmaken'}
+                </h2>            </div>
+
 
             <div className="flex-1 bg-gray-50 px-6 py-4 overflow-y-auto space-y-4">
                 <div className="space-y-4">

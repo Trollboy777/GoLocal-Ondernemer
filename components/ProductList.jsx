@@ -308,7 +308,7 @@ function ProductEditPopup({ product, onCancel, onSave }) {
 }
 
 // Hoofdcomponent: ProductList
-export default function ProductList() {
+export default function ProductList({onTitleClick}) {
     const [products, setProducts] = useState([]);
     const [editableProduct, setEditableProduct] = useState(null);
     const [companyId, setCompanyId] = useState(null);
@@ -407,9 +407,15 @@ export default function ProductList() {
 
     return (
         <div className="flex flex-col h-full relative">
-            <h2 className="text-2xl font-bold mb-4 px-6 pt-6 text-gray-800 border-b-2 border-blue-500 pb-2 inline-block">
-                Producten
-            </h2>
+            <div
+                className="text-2xl font-bold mb-4 px-6 pt-6 text-gray-800 border-b-2 border-blue-500 pb-2 inline-block cursor-pointer"
+                onClick={onTitleClick} // <-- HIER IS DE VERANDERING
+            >
+                <h2 className="text-2xl font-bold mb-4 px-6 pt-6 text-gray-800  ">
+                    Producten
+                </h2>
+            </div>
+
 
             <div className="flex-1 px-6 py-4 overflow-y-auto space-y-4">
                 {products
