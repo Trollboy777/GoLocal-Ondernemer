@@ -26,42 +26,41 @@ export default function Layout() {
         }
     };
 
-    const handleClick = (panelName) => {
+    // handleClick blijft hier, maar wordt doorgegeven als prop
+    const handlePanelClick = (panelName) => {
         setActivePanel(activePanel === panelName ? null : panelName);
     };
 
     return (
-        // Hoofdcontainer:
-        // Op mobiel: flex-col, h-auto (past zich aan de totale inhoud aan), overflow-y-auto om alles te scrollen
-        // Op desktop: md:flex-row, md:h-screen (vult de schermhoogte), md:overflow-hidden (scrollen gebeurt in de kolommen)
         <div className="flex flex-col h-auto overflow-y-auto
                         md:flex-row md:h-screen md:overflow-hidden
                         w-full bg-white p-2 md:p-4 gap-4 md:gap-6">
 
             {/* Producten Kolom */}
             <div
-                // Op mobiel: w-full (hele breedte), h-auto (past zich aan inhoud aan)
-                // Op desktop: md:h-full (vult de hoogte van de main flex container), dynamische breedte
-                className={`w-full h-auto md:h-full ${getColumnWidth('products')} ${getPanelClasses('products')} cursor-pointer`}
-                onClick={() => handleClick('products')}
+                className={`w-full h-auto md:h-full ${getColumnWidth('products')} ${getPanelClasses('products')}`}
+                // onClick en cursor-pointer HIER VERWIJDERD
             >
-                <ProductList />
+                {/* Geef de click handler door als prop */}
+                <ProductList onTitleClick={() => handlePanelClick('products')} />
             </div>
 
             {/* Bedrijfsinformatie Kolom */}
             <div
-                className={`w-full h-auto md:h-full ${getColumnWidth('company')} ${getPanelClasses('company')} cursor-pointer`}
-                onClick={() => handleClick('company')}
+                className={`w-full h-auto md:h-full ${getColumnWidth('company')} ${getPanelClasses('company')}`}
+                // onClick en cursor-pointer HIER VERWIJDERD
             >
-                <CreateCompanyForm />
+                {/* Geef de click handler door als prop */}
+                <CreateCompanyForm onTitleClick={() => handlePanelClick('company')} />
             </div>
 
             {/* Accountinformatie Kolom */}
             <div
-                className={`w-full h-auto md:h-full ${getColumnWidth('account')} ${getPanelClasses('account')} cursor-pointer`}
-                onClick={() => handleClick('account')}
+                className={`w-full h-auto md:h-full ${getColumnWidth('account')} ${getPanelClasses('account')}`}
+                // onClick en cursor-pointer HIER VERWIJDERD
             >
-                <AccountForm />
+                {/* Geef de click handler door als prop */}
+                <AccountForm onTitleClick={() => handlePanelClick('account')} />
             </div>
         </div>
     );
