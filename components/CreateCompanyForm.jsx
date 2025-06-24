@@ -20,7 +20,6 @@ export default function CreateCompanyForm() {
     const [categories, setCategories] = useState([]);
     const [imageFile, setImageFile] = useState(null);
 
-
     const [formData, setFormData] = useState({
         name: '',
         description: '',
@@ -53,9 +52,6 @@ export default function CreateCompanyForm() {
         fetchCategories();
     }, []);
 
-    const inputClasses = "w-full bg-blue-50 p-3 rounded-lg border border-transparent focus:outline-none focus:ring-2 focus:ring-blue-400";
-    const sectionTitleClasses = "text-lg font-semibold text-gray-800 mb-3 border-b border-gray-200 pb-2";
-
     useEffect(() => {
         async function fetchOwnCompany() {
             try {
@@ -67,49 +63,62 @@ export default function CreateCompanyForm() {
                 });
 
                 const data = await response.json();
-                const userId = getUserIdFromToken();
+                console.log("🟢 Bedrijven opgehaald:", data);
 
+                const userId = getUserIdFromToken();
                 const myCompany = data.data.companies.find((comp) => {
                     const compUserId = Array.isArray(comp.user_id) ? comp.user_id[0] : comp.user_id;
                     return compUserId === userId;
                 });
 
                 if (myCompany) {
-                    setFormData(prev => {
-                        const updatedAdress = {
-                            ...prev.adress,
-                            ...(myCompany.adress || {})
-                        };
-                        if (!updatedAdress.coordinates) {
-                            updatedAdress.coordinates = { x: '', y: '', z: '' };
-                        }
+                    console.log("✅ Mijn bedrijf gevonden:", myCompany);
 
-                        return {
-                            ...prev,
-                            ...myCompany,
-                            tagInput: '',
-                            adress: updatedAdress,
-                            open_times: {
+                    try {
+                        setFormData(prev => {
+                            const updatedAdress = {
+                                ...prev.adress,
+                                ...(typeof myCompany.adress === 'object' ? myCompany.adress : {})
+                            };
+
+                            const updatedOpenTimes = {
                                 ...prev.open_times,
-                                ...(myCompany.open_times || {})
-                            }
-                        };
-                    });
-                    setCompany_id(myCompany._id);
-                    setEditMode(true);
+                                ...(typeof myCompany.open_times === 'object' ? myCompany.open_times : {})
+                            };
+
+                            return {
+                                ...prev,
+                                ...myCompany,
+                                tagInput: '',
+                                adress: updatedAdress,
+                                open_times: updatedOpenTimes
+                            };
+                        });
+
+                        setCompany_id(myCompany._id);
+                        setEditMode(true);
+                    } catch (err) {
+                        console.error("❌ Fout bij setFormData:", err);
+                    }
+                } else {
+                    console.warn("⚠️ Geen bedrijf gekoppeld aan deze gebruiker.");
                 }
             } catch (err) {
-                console.error('Fout bij ophalen eigen bedrijf:', err);
+                console.error('❌ Fout bij ophalen eigen bedrijf:', err);
             }
         }
 
         fetchOwnCompany();
     }, []);
 
+    const inputClasses = "w-full bg-blue-50 p-3 rounded-lg border border-transparent focus:outline-none focus:ring-2 focus:ring-blue-400";
+    const sectionTitleClasses = "text-lg font-semibold text-gray-800 mb-3 border-b border-gray-200 pb-2";
+
     const handleChange = (e) => {
         const { name, value } = e.target;
         setFormData(prev => ({ ...prev, [name]: value }));
     };
+
     const handleAdressChange = (e) => {
         const { name, value } = e.target;
         setFormData(prev => ({
@@ -172,6 +181,7 @@ export default function CreateCompanyForm() {
         formDataToSend.append("open_times", JSON.stringify(formData.open_times));
 
         if (imageFile) {
+            console.log("🖼️ Afbeelding toegevoegd:", imageFile.name);
             formDataToSend.append("image", imageFile);
         }
 
@@ -190,6 +200,7 @@ export default function CreateCompanyForm() {
             });
 
             const data = await response.json();
+            console.log("🔁 Server response:", data);
 
             if (response.ok) {
                 alert(editMode ? "Bedrijf succesvol bijgewerkt" : "Bedrijf succesvol toegevoegd");
@@ -201,11 +212,10 @@ export default function CreateCompanyForm() {
                 alert(data.message || 'Fout bij aanmaken bedrijf');
             }
         } catch (err) {
-            console.error('Fout:', err);
+            console.error('❌ Netwerkfout:', err);
             alert('Netwerkfout');
         }
     };
-
 
     return (
         <div className="flex flex-col h-full">
@@ -216,10 +226,8 @@ export default function CreateCompanyForm() {
             <div className="flex-1 bg-gray-50 px-6 py-4 overflow-y-auto space-y-4">
                 <div className="space-y-4">
                     <h3 className={sectionTitleClasses}>Algemene Informatie</h3>
-                    <input name="name" placeholder="Naam" value={formData.name} onChange={handleChange}
-                           className={inputClasses}/>
-                    <input name="description" placeholder="Beschrijving" value={formData.description}
-                           onChange={handleChange} className={inputClasses}/>
+                    <input name="name" placeholder="Naam" value={formData.name} onChange={handleChange} className={inputClasses} />
+                    <input name="description" placeholder="Beschrijving" value={formData.description} onChange={handleChange} className={inputClasses} />
                     <label className="font-medium text-gray-700 mb-1 block">Afbeelding Uploaden:</label>
                     <input
                         type="file"
@@ -227,9 +235,7 @@ export default function CreateCompanyForm() {
                         onChange={(e) => setImageFile(e.target.files[0])}
                         className={inputClasses}
                     />
-
-                    <select name="category_id" value={formData.category_id} onChange={handleChange}
-                            className={inputClasses}>
+                    <select name="category_id" value={formData.category_id} onChange={handleChange} className={inputClasses}>
                         <option value="">Selecteer een categorie</option>
                         {categories.map((cat) => (
                             <option key={cat._id} value={cat._id}>{cat.name}</option>
