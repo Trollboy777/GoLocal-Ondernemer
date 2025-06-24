@@ -18,6 +18,8 @@ export default function CreateCompanyForm() {
     const [editMode, setEditMode] = useState(false);
     const [company_id, setCompany_id] = useState(null);
     const [categories, setCategories] = useState([]);
+    const [imageFile, setImageFile] = useState(null);
+
 
     const [formData, setFormData] = useState({
         name: '',
@@ -161,11 +163,16 @@ export default function CreateCompanyForm() {
     };
 
     const handleSubmit = async () => {
-        const bodyData = { ...formData };
-        delete bodyData.tagInput;
+        const formDataToSend = new FormData();
+        formDataToSend.append("name", formData.name);
+        formDataToSend.append("description", formData.description);
+        formDataToSend.append("category_id", formData.category_id);
+        formDataToSend.append("tag", JSON.stringify(formData.tag));
+        formDataToSend.append("adress", JSON.stringify(formData.adress));
+        formDataToSend.append("open_times", JSON.stringify(formData.open_times));
 
-        if (Object.values(bodyData.open_times).every(x => x === '')) {
-            delete bodyData.open_times;
+        if (imageFile) {
+            formDataToSend.append("image", imageFile);
         }
 
         const method = editMode ? 'PATCH' : 'POST';
@@ -175,14 +182,15 @@ export default function CreateCompanyForm() {
 
         try {
             const response = await fetch(url, {
-                method: method,
+                method,
                 headers: {
-                    'Content-Type': 'application/json',
                     'Authorization': 'Bearer ' + localStorage.getItem('token')
                 },
-                body: JSON.stringify(bodyData)
+                body: formDataToSend
             });
+
             const data = await response.json();
+
             if (response.ok) {
                 alert(editMode ? "Bedrijf succesvol bijgewerkt" : "Bedrijf succesvol toegevoegd");
                 if (!editMode) {
@@ -198,6 +206,7 @@ export default function CreateCompanyForm() {
         }
     };
 
+
     return (
         <div className="flex flex-col h-full">
             <h2 className="text-2xl font-bold mb-4 px-6 pt-6 text-gray-800 border-b-2 border-blue-500 pb-2 inline-block">
@@ -207,10 +216,20 @@ export default function CreateCompanyForm() {
             <div className="flex-1 bg-gray-50 px-6 py-4 overflow-y-auto space-y-4">
                 <div className="space-y-4">
                     <h3 className={sectionTitleClasses}>Algemene Informatie</h3>
-                    <input name="name" placeholder="Naam" value={formData.name} onChange={handleChange} className={inputClasses} />
-                    <input name="description" placeholder="Beschrijving" value={formData.description} onChange={handleChange} className={inputClasses} />
-                    <input name="image_url" placeholder="Afbeelding URL" value={formData.image_url} onChange={handleChange} className={inputClasses} />
-                    <select name="category_id" value={formData.category_id} onChange={handleChange} className={inputClasses}>
+                    <input name="name" placeholder="Naam" value={formData.name} onChange={handleChange}
+                           className={inputClasses}/>
+                    <input name="description" placeholder="Beschrijving" value={formData.description}
+                           onChange={handleChange} className={inputClasses}/>
+                    <label className="font-medium text-gray-700 mb-1 block">Afbeelding Uploaden:</label>
+                    <input
+                        type="file"
+                        accept="image/*"
+                        onChange={(e) => setImageFile(e.target.files[0])}
+                        className={inputClasses}
+                    />
+
+                    <select name="category_id" value={formData.category_id} onChange={handleChange}
+                            className={inputClasses}>
                         <option value="">Selecteer een categorie</option>
                         {categories.map((cat) => (
                             <option key={cat._id} value={cat._id}>{cat.name}</option>
