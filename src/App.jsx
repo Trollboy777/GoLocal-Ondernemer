@@ -23,7 +23,9 @@ function App() {
                 },
             ],
         },
-    ]);
+    ],
+        { basename: "/GoLocal-Ondernemer" }
+    );
 
     return <RouterProvider router={router} />;
 }
