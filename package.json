@@ -1,9 +1,8 @@
 {
   "name": "ondernemer",
-  "private": true,
+  "homepage": "https://trollboy777.github.io/GoLocal-Ondernemer/",
   "version": "0.0.0",
   "type": "module",
-  "homepage": "https://trollboy777.github.io/GoLocal-Ondernemer/",
   "scripts": {
     "dev": "vite",
     "build": "vite build",
