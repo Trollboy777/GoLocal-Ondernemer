@@ -1,6 +1,6 @@
 // src/AccountForm.jsx
 import React, { useState } from "react";
-import { ChevronLeft, User, MapPin, Edit, LogOut } from 'lucide-react'; // Iconen voor de account sectie
+import { User, LogOut } from 'lucide-react'; // Iconen voor de account sectie
 
 export default function AccountForm({onTitleClick}) {
     // Voorbeeld state voor account info (pas aan naar je echte data structuur)

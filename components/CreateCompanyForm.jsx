@@ -1,6 +1,6 @@
 // src/CreateCompanyForm.jsx
 import React, { useEffect, useState } from "react";
-import { Camera, Plus, X } from 'lucide-react';
+import { Plus, X } from 'lucide-react';
 
 function getUserIdFromToken() {
     try {

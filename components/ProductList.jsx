@@ -22,8 +22,8 @@ function ProductCreatePopup({ onCancel, onSave, companyId }) {
         price: "",
         weight: "",
         category_id: "",
+        image: "",
     });
-    const [imageFile, setImageFile] = useState(null);
     const [categories, setCategories] = useState([]);
     const [loading, setLoading] = useState(false);
 
@@ -53,16 +53,13 @@ function ProductCreatePopup({ onCancel, onSave, companyId }) {
     const handleSubmit = async (e) => {
         e.preventDefault();
 
-        console.log("verzend category_id", formData.category_id); // Debug-log
-        console.log("Geselecteerd bestand:", imageFile); // Debugging bestand
-
         // Validatie
-        if (!formData.category_id || typeof formData.category_id !== "string") {
-            alert("Selecteer een geldig categorie-ID.");
+        if (!formData.category_id || !/^[a-fA-F0-9]{24}$/.test(formData.category_id)) {
+            alert("Selecteer een geldige categorie.");
             return;
         }
 
-        if (!imageFile) {
+        if (!formData.image) {
             alert("Selecteer een afbeelding.");
             return;
         }
@@ -73,9 +70,9 @@ function ProductCreatePopup({ onCancel, onSave, companyId }) {
         formDataToSend.append("description", formData.description || "Geen beschrijving opgegeven");
         formDataToSend.append("price", parseFloat(formData.price));
         formDataToSend.append("weight", parseFloat(formData.weight) || 1);
-        formDataToSend.append("category_id", formData.category_id);
-        formDataToSend.append("company_id", companyId); // Hier wordt company_id toegevoegd
-        formDataToSend.append("image", imageFile);
+        formDataToSend.append("category_id", String (formData.category_id));
+        formDataToSend.append("company_id", companyId);
+        formDataToSend.append("image", formData.image); // Gebruik de afbeelding uit formData
 
         try {
             const response = await fetch("http://145.24.223.203:80/products", {
@@ -136,19 +133,14 @@ function ProductCreatePopup({ onCancel, onSave, companyId }) {
                         <select
                             name="category_id"
                             value={formData.category_id}
-                            onChange={(e) => {
-                                console.log("Geselecteerd ID:", e.target.value); // Debug
-                                setFormData({...formData, [e.target.name]: e.target.value});
-                            }}
+                            onChange={handleChange}
                             className="w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-400"
                             required
                         >
-                            <option value="" disabled>
-                                Selecteer een categorie
-                            </option>
-                            {categories.map((category) => (
-                                <option key={category._id} value={String(category._id)}>
-                                    {category.name}
+                            <option value="">Selecteer een categorie</option>
+                            {categories.map((cat) => (
+                                <option key={cat._id} value={cat._id}>
+                                    {cat.name}
                                 </option>
                             ))}
                         </select>
@@ -156,8 +148,16 @@ function ProductCreatePopup({ onCancel, onSave, companyId }) {
                             type="file"
                             accept="image/*"
                             onChange={(e) => {
-                                console.log("Afbeelding geselecteerd:", e.target.files[0]); // Debugging
-                                setImageFile(e.target.files[0]);
+                                const selectedFile = e.target.files[0];
+                                if (selectedFile) {
+                                    console.log("Afbeelding geselecteerd:", selectedFile.name);
+                                    setFormData({
+                                        ...formData,
+                                        image: selectedFile, // Voeg de afbeelding toe aan het formData object
+                                    });
+                                } else {
+                                    console.error("Geen afbeelding geselecteerd!");
+                                }
                             }}
                             className="w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-400"
                         />
@@ -192,20 +192,45 @@ function ProductCreatePopup({ onCancel, onSave, companyId }) {
 }
 
 // Component: Popup voor productbewerking (bewerkt naar bestand upload functionaliteit)
-function ProductEditPopup({ product, onCancel, onSave }) {
+function ProductEditPopup({product, onCancel, onSave}) {
     const [formData, setFormData] = useState(product);
     const [imageFile, setImageFile] = useState(null);
+    const [categories, setCategories] = useState([]);
+
+    useEffect(() => {
+        const fetchCategories = async () => {
+            try {
+                const response = await fetch("http://145.24.223.203:80/categories");
+                const data = await response.json();
+                setCategories(data.data.categories || []); // Vul de state met de opgehaalde categorieën
+            } catch (err) {
+                console.error("Fout bij ophalen van categorieën:", err);
+            }
+        };
+
+        fetchCategories();
+    }, []);
 
     useEffect(() => {
         setFormData(product);
     }, [product]);
 
     const handleChange = (e) => {
-        setFormData({ ...formData, [e.target.name]: e.target.value });
+        setFormData({...formData, [e.target.name]: e.target.value});
     };
 
     const handleSubmit = async (e) => {
         e.preventDefault();
+
+        if (!imageFile) {
+            alert("Selecteer een afbeelding voordat je doorgaat.");
+            return;
+        }
+
+        console.log("Inzending inclusief afbeelding:", {
+            ...formData,
+            image: imageFile.name, // Log alleen de naam van het bestand
+        });
 
         // FormData opbouwen
         const formDataToSend = new FormData();
@@ -272,6 +297,20 @@ function ProductEditPopup({ product, onCancel, onSave }) {
                         placeholder="Prijs"
                         required
                     />
+                    <select
+                        name="category_id"
+                        value={formData.category_id || ""}
+                        onChange={handleChange}
+                        className="w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-400"
+                        required
+                    >
+                        <option value="">Selecteer een categorie</option>
+                        {categories.map((cat) => (
+                            <option key={cat._id} value={cat._id}>
+                                {cat.name}
+                            </option>
+                        ))}
+                    </select>
                     <input
                         type="file"
                         accept="image/*"
@@ -363,14 +402,6 @@ export default function ProductList({onTitleClick}) {
     }, [fetchUserCompany]);
 
     const handleCreateNewProduct = (newProduct) => {
-        console.debug("Nieuw product ontvangen:", newProduct);
-
-        if (!imageFile) {
-            console.error("Afbeelding is niet geselecteerd!");
-            alert("Zorg ervoor dat je een afbeelding selecteert.");
-            return;
-        }
-
         const formDataToSend = new FormData();
         formDataToSend.append("name", newProduct.name);
         formDataToSend.append("description", newProduct.description || "Geen beschrijving opgegeven");
@@ -378,16 +409,14 @@ export default function ProductList({onTitleClick}) {
         formDataToSend.append("weight", parseFloat(newProduct.weight) || 1);
         formDataToSend.append("category_id", newProduct.category_id);
         formDataToSend.append("company_id", companyId);
-        formDataToSend.append("image", imageFile);
-
-        console.debug("Payload verzonden:", formDataToSend);
+        formDataToSend.append("image", newProduct.image); // Hier wordt het bestand toegevoegd
 
         fetch("http://145.24.223.203:80/products", {
             method: "POST",
             headers: {
                 Authorization: `Bearer ${localStorage.getItem("token")}`,
             },
-            body: formDataToSend, // Gebruik FormData
+            body: formDataToSend,
         })
             .then((response) => response.json())
             .then((data) => {
@@ -395,13 +424,13 @@ export default function ProductList({onTitleClick}) {
                     console.error("Fout van server: ", data.message);
                     alert(`Er is een fout opgetreden: ${data.message}`);
                 } else {
-                    console.log("Product succesvol aangemaakt!");
-                    fetchProducts(companyId); // Ververs producten
-                    setShowCreatePopup(false);
+                    console.log("Product succesvol aangemaakt:", data);
+                    fetchProducts(companyId); // Update de lijst met producten
+                    setShowCreatePopup(false); // Sluit de popup
                 }
             })
             .catch((err) => {
-                console.error("Netwerk of JSON-fout: ", err);
+                console.error("Netwerkfout:", err);
             });
     };
 
