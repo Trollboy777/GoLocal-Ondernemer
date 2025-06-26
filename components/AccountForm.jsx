@@ -1,8 +1,8 @@
 // src/AccountForm.jsx
 import React, { useState } from "react";
-import { ChevronLeft, User, MapPin, Edit, LogOut } from 'lucide-react'; // Iconen voor de account sectie
+import { User, LogOut } from 'lucide-react'; // Iconen voor de account sectie
 
-export default function AccountForm() {
+export default function AccountForm({onTitleClick}) {
     // Voorbeeld state voor account info (pas aan naar je echte data structuur)
     const [accountInfo, setAccountInfo] = useState({
         firstName: '',
@@ -39,9 +39,15 @@ export default function AccountForm() {
 
     return (
         <div className="flex flex-col h-full rounded-xl overflow-hidden">
-            <h2 className="text-2xl font-bold mb-4 px-6 pt-6 text-gray-800 border-b-2 border-blue-500 pb-2 inline-block">
-                Account informatie
-            </h2>
+            <div
+                className="text-2xl font-bold mb-4 px-6 pt-6 text-gray-800 border-b-2 border-blue-500 pb-2 inline-block cursor-pointer"
+                onClick={onTitleClick} // <-- HIER IS DE VERANDERING
+            >
+                <h2 className="text-2xl font-bold mb-4 px-6 pt-6 text-gray-800 ">
+                    Account informatie
+                </h2>
+            </div>
+
 
             {/* Profielfoto en Naam */}
             <div className="flex flex-col items-center p-6 pb-4">

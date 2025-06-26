@@ -15,140 +15,141 @@ function getUserIdFromToken() {
 }
 
 // Component: Popup voor productcreatie
-function ProductCreatePopup({ onCancel, onSave }) {
+function ProductCreatePopup({ onCancel, onSave, companyId }) {
     const [formData, setFormData] = useState({
         name: "",
         description: "",
         price: "",
-        image_url: "",
         weight: "",
         category_id: "",
+        image_url: "", // Afbeelding URL. Optioneel gebruikt voor bestaande afbeeldingen bij bewerkingen.
     });
-    const [images, setImages] = useState([]);
     const [categories, setCategories] = useState([]);
+    const [imageFile, setImageFile] = useState(null); // Bestand voor upload
     const [loading, setLoading] = useState(false);
 
     useEffect(() => {
-        // Afbeeldingen ophalen van de database
-        const fetchImages = async () => {
-            try {
-                setLoading(true);
-                const response = await fetch("http://145.24.223.203:80/products");
-                const data = await response.json();
-                const availableImages = data.data.products.map((product) => product.image_url);
-                setImages([...new Set(availableImages)]); // Zorg voor unieke afbeeldingen
-            } catch (err) {
-                console.error("Fout bij ophalen van afbeeldingen:", err);
-            } finally {
-                setLoading(false);
-            }
-        };
-
-        // Categorieën ophalen
+        // Categories ophalen
         const fetchCategories = async () => {
             try {
                 setLoading(true);
                 const response = await fetch("http://145.24.223.203:80/categories");
                 const data = await response.json();
                 setCategories(data.data.categories || []);
-            } catch (err) {
-                console.error("Fout bij ophalen van categorieën:", err);
+            } catch (error) {
+                console.error("Fout bij ophalen categorieën:", error);
             } finally {
                 setLoading(false);
             }
         };
-
-        fetchImages();
         fetchCategories();
     }, []);
 
+    // Formulier 'onChange'
     const handleChange = (e) => {
-        setFormData({ ...formData, [e.target.name]: e.target.value });
+        const { name, value } = e.target;
+        setFormData({ ...formData, [name]: value });
     };
 
-    const handleSubmit = (e) => {
+    const handleSubmit = async (e) => {
         e.preventDefault();
 
-        // Validatie: Controleer vereiste velden
-        if (!formData.name || !formData.price || !formData.image_url || !formData.category_id) {
-            alert("Alle verplichte velden moeten ingevuld zijn.");
-            return;
+        const formDataToSend = new FormData();
+        formDataToSend.append("name", formData.name);
+        formDataToSend.append("description", formData.description || "Geen beschrijving");
+        formDataToSend.append("price", parseFloat(formData.price));
+        formDataToSend.append("weight", parseFloat(formData.weight) || 1);
+        formDataToSend.append("category_id", formData.category_id);
+        formDataToSend.append("company_id", companyId);
+
+        if (imageFile) {
+            console.log("Afbeelding uploaden:", imageFile.name);
+            formDataToSend.append("image", imageFile);
         }
 
-        formData.price = parseFloat(formData.price) || 0;
-        formData.weight = parseFloat(formData.weight) || 1;
+        try {
+            const response = await fetch("http://145.24.223.203:80/products", {
+                method: "POST",
+                headers: {
+                    Authorization: `Bearer ${localStorage.getItem("token")}`,
+                },
+                body: formDataToSend,
+            });
 
-        onSave(formData);
+            const data = await response.json();
+
+            if (response.ok) {
+                alert("Product aangemaakt!");
+                onSave(data);
+            } else {
+                alert(data.message || "Fout bij aanmaken product.");
+            }
+        } catch (error) {
+            console.error("Netwerkfout:", error);
+            alert("Er is een probleem opgetreden.");
+        }
     };
 
     return (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-            <div className="bg-white rounded-lg shadow-xl p-6 w-full max-w-md mx-auto">
-                <h2 className="text-2xl font-bold mb-6 text-gray-800">Product maken</h2>
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4">
+            <div className="bg-white rounded-lg shadow-xl p-6 w-full max-w-md">
+                <h2 className="text-xl font-bold mb-4">Maak een nieuw product</h2>
                 {loading ? (
                     <p>Laden...</p>
                 ) : (
-                    <form onSubmit={handleSubmit} className="space-y-4">
+                    <form onSubmit={handleSubmit}>
                         <input
                             type="text"
                             name="name"
                             value={formData.name}
                             onChange={handleChange}
-                            className="w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-400"
-                            placeholder="Naam"
-                            required
+                            className="block w-full p-2 mb-4 border rounded"
+                            placeholder="Productnaam"
                         />
                         <textarea
                             name="description"
                             value={formData.description}
                             onChange={handleChange}
-                            className="w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-400"
+                            className="block w-full p-2 mb-4 border rounded"
                             placeholder="Beschrijving"
-                            rows="3"
                         />
                         <input
                             type="number"
                             name="price"
                             value={formData.price}
                             onChange={handleChange}
-                            className="w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-400"
-                            placeholder="Prijs (bijv. 19.99)"
-                            required
+                            className="block w-full p-2 mb-4 border rounded"
+                            placeholder="Prijs"
                         />
-                        {/* Dropdown voor categorieën */}
                         <select
                             name="category_id"
                             value={formData.category_id}
                             onChange={handleChange}
-                            className="w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-400"
-                            required
+                            className="block w-full p-2 mb-4 border rounded"
                         >
-                            <option value="" disabled>
-                                Selecteer een categorie
-                            </option>
-                            {categories.map((category) => (
-                                <option key={category._id} value={category._id}>
-                                    {category.name}
+                            <option value="">Selecteer een categorie</option>
+                            {categories.map(cat => (
+                                <option key={cat._id} value={cat._id}>
+                                    {cat.name}
                                 </option>
                             ))}
                         </select>
-                        {/* Dropdown voor afbeelding keuze */}
-                        <select
-                            name="image_url"
-                            value={formData.image_url}
-                            onChange={handleChange}
-                            className="w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-400"
-                            required
-                        >
-                            <option value="" disabled>
-                                Selecteer een afbeelding
-                            </option>
-                            {images.map((image, index) => (
-                                <option key={index} value={image}>
-                                    {image}
-                                </option>
-                            ))}
-                        </select>
+                        {formData.image_url && (
+                            <div>
+                                <p className="text-sm text-gray-600 mb-1">Huidige afbeelding:</p>
+                                <img
+                                    src={`http://145.24.223.203/uploads/${formData.image_url}`}
+                                    alt="Huidige afbeelding"
+                                    className="h-20 w-20 object-cover rounded-lg shadow-md mb-3"
+                                />
+                            </div>
+                        )}
+                        <input
+                            type="file"
+                            accept="image/*"
+                            onChange={(e) => setImageFile(e.target.files[0])}
+                            className="block w-full p-2 mb-4 border rounded"
+                        />
                         <input
                             type="number"
                             name="weight"
@@ -179,9 +180,25 @@ function ProductCreatePopup({ onCancel, onSave }) {
     );
 }
 
-// Component: Popup voor productbewerking (blijft ongewijzigd)
+// Component: Popup voor productbewerking (bewerkt naar bestand upload functionaliteit)
 function ProductEditPopup({ product, onCancel, onSave }) {
     const [formData, setFormData] = useState(product);
+    const [imageFile, setImageFile] = useState(null); // Voor een nieuwe upload
+    const [categories, setCategories] = useState([]);
+
+    useEffect(() => {
+        const fetchCategories = async () => {
+            try {
+                const response = await fetch("http://145.24.223.203:80/categories");
+                const data = await response.json();
+                setCategories(data.data.categories || []); // Vul de categorieën
+            } catch (err) {
+                console.error("Fout bij ophalen van categorieën:", err);
+            }
+        };
+
+        fetchCategories();
+    }, []);
 
     useEffect(() => {
         setFormData(product);
@@ -191,18 +208,52 @@ function ProductEditPopup({ product, onCancel, onSave }) {
         setFormData({ ...formData, [e.target.name]: e.target.value });
     };
 
-    const handleSubmit = (e) => {
+    const handleSubmit = async (e) => {
         e.preventDefault();
-        onSave(formData);
+
+        const formDataToSend = new FormData();
+        formDataToSend.append("name", formData.name);
+        formDataToSend.append("description", formData.description || "Geen beschrijving opgegeven");
+        formDataToSend.append("price", parseFloat(formData.price));
+        formDataToSend.append("weight", parseFloat(formData.weight) || 1);
+        formDataToSend.append("category_id", formData.category_id);
+
+        if (imageFile) {
+            console.log("Nieuwe afbeelding geselecteerd:", imageFile.name);
+            formDataToSend.append("image", imageFile);
+        } else {
+            console.log("Geen nieuwe afbeelding geselecteerd.");
+        }
+
+        try {
+            const response = await fetch(`http://145.24.223.203:80/products/${formData._id}`, {
+                method: "PATCH",
+                headers: {
+                    Authorization: `Bearer ${localStorage.getItem("token")}`,
+                },
+                body: formDataToSend,
+            });
+
+            const data = await response.json();
+
+            if (response.ok) {
+                alert("Product succesvol bijgewerkt!");
+                onSave(data);
+            } else {
+                alert(data.message || "Fout bij het bijwerken van het product.");
+            }
+        } catch (error) {
+            console.error("Netwerkfout:", error);
+            alert("Er is een probleem opgetreden.");
+        }
     };
 
     return (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
             <div className="bg-white rounded-lg shadow-xl p-6 w-full max-w-md mx-auto">
-                <h2 className="text-2xl font-bold mb-6 text-gray-800">
-                    Product bewerken
-                </h2>
+                <h2 className="text-2xl font-bold mb-6 text-gray-800">Product bewerken</h2>
                 <form onSubmit={handleSubmit} className="space-y-4">
+                    {/* Naam */}
                     <input
                         type="text"
                         name="name"
@@ -210,23 +261,78 @@ function ProductEditPopup({ product, onCancel, onSave }) {
                         onChange={handleChange}
                         className="w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-400"
                         placeholder="Naam"
+                        required
                     />
+
+                    {/* Beschrijving */}
+                    <textarea
+                        name="description"
+                        value={formData.description || ""}
+                        onChange={handleChange}
+                        className="w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-400"
+                        placeholder="Beschrijving"
+                        rows="3"
+                    />
+
+                    {/* Prijs */}
                     <input
                         type="number"
                         name="price"
                         value={formData.price || ""}
                         onChange={handleChange}
+                        step="0.01"
                         className="w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-400"
                         placeholder="Prijs"
+                        required
                     />
-                    <input
-                        type="text"
-                        name="image_url"
-                        value={formData.image_url || ""}
+
+                    {/* Categorieën */}
+                    <select
+                        name="category_id"
+                        value={formData.category_id || ""}
                         onChange={handleChange}
                         className="w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-400"
-                        placeholder="Afbeeldings-URL"
+                        required
+                    >
+                        <option value="">Selecteer een categorie</option>
+                        {categories.map((cat) => (
+                            <option key={cat._id} value={cat._id}>
+                                {cat.name}
+                            </option>
+                        ))}
+                    </select>
+
+                    {/* Huidige afbeelding */}
+                    {formData.image_url && (
+                        <div>
+                            <p className="text-sm text-gray-600 mb-1">Huidige afbeelding:</p>
+                            <img
+                                src={formData.image_url}
+                                alt="Huidige afbeelding"
+                                className="h-20 w-20 object-cover rounded-lg shadow-md mb-3"
+                            />
+                        </div>
+                    )}
+
+                    {/* Nieuwe afbeelding uploaden */}
+                    <input
+                        type="file"
+                        accept="image/*"
+                        onChange={(e) => setImageFile(e.target.files[0])}
+                        className="w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-400"
                     />
+
+                    {/* Gewicht */}
+                    <input
+                        type="number"
+                        name="weight"
+                        value={formData.weight || ""}
+                        onChange={handleChange}
+                        className="w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-400"
+                        placeholder="Gewicht"
+                    />
+
+                    {/* Actieknoppen */}
                     <div className="flex justify-end gap-3 mt-6">
                         <button
                             type="button"
@@ -249,12 +355,13 @@ function ProductEditPopup({ product, onCancel, onSave }) {
 }
 
 // Hoofdcomponent: ProductList
-export default function ProductList() {
+export default function ProductList({ onTitleClick }) {
     const [products, setProducts] = useState([]);
     const [editableProduct, setEditableProduct] = useState(null);
     const [companyId, setCompanyId] = useState(null);
     const [showCreatePopup, setShowCreatePopup] = useState(false);
 
+    // Haalt de lijst met producten op
     const fetchProducts = useCallback((companyId) => {
         if (!companyId) {
             console.error("Geen company_id aanwezig bij het ophalen van producten.");
@@ -275,6 +382,7 @@ export default function ProductList() {
             .catch((err) => console.error("Fout bij ophalen producten:", err));
     }, []);
 
+    // Haalt het bedrijf van de gebruiker op
     const fetchUserCompany = useCallback(async () => {
         try {
             const response = await fetch("http://145.24.223.203:80/companies", {
@@ -303,55 +411,37 @@ export default function ProductList() {
         fetchUserCompany();
     }, [fetchUserCompany]);
 
+    // Verwerkt een nieuw aangemaakt product
     const handleCreateNewProduct = (newProduct) => {
-        if (!newProduct.image_url) {
-            console.error("Afbeelding is niet geselecteerd!");
-            alert("Zorg ervoor dat je een afbeelding selecteert.");
-            return;
-        }
+        // Voeg het nieuwe product toe aan de lijst
+        setProducts((prevProducts) => [...prevProducts, newProduct]);
+        setShowCreatePopup(false); // Sluit popup
+    };
 
-        const payload = {
-            name: newProduct.name,
-            description: newProduct.description || "Geen beschrijving opgegeven",
-            price: parseFloat(newProduct.price),
-            image_url: newProduct.image_url, // Controleer dit veld opnieuw!
-            weight: parseFloat(newProduct.weight) || 1,
-            company_id: companyId,
-            category_id: newProduct.category_id,
-        };
-
-        console.debug("Controleer payload: ", JSON.stringify(payload, null, 2)); // Helpt debugging enorm!
-
-        fetch("http://145.24.223.203:80/products", {
-            method: "POST",
-            headers: {
-                Authorization: `Bearer ${localStorage.getItem("token")}`,
-                "Content-Type": "application/json",
-            },
-            body: JSON.stringify(payload),
-        })
-            .then((response) => response.json())
-            .then((data) => {
-                if (data.status === "fail") {
-                    console.error("Fout van server: ", data.message);
-                    alert(`Er is een fout opgetreden: ${data.message}`);
-                } else {
-                    console.log("Product succesvol aangemaakt!");
-                    fetchProducts(companyId); // Ververs producten
-                    setShowCreatePopup(false);
-                }
-            })
-            .catch((err) => {
-                console.error("Netwerk of JSON-fout: ", err);
-            });
+    // Verwerkt een succesvol bijgewerkt product
+    const handleUpdateProduct = (updatedProduct) => {
+        // Werk de productlijst bij met de gewijzigde gegevens
+        setProducts((prevProducts) =>
+            prevProducts.map((product) =>
+                product._id === updatedProduct._id ? updatedProduct : product
+            )
+        );
+        setEditableProduct(null); // Sluit popup
     };
 
     return (
         <div className="flex flex-col h-full relative">
-            <h2 className="text-2xl font-bold mb-4 px-6 pt-6 text-gray-800 border-b-2 border-blue-500 pb-2 inline-block">
-                Producten
-            </h2>
+            {/* Titel */}
+            <div
+                className="text-2xl font-bold mb-4 px-6 pt-6 text-gray-800 border-b-2 border-blue-500 pb-2 inline-block cursor-pointer"
+                onClick={onTitleClick}
+            >
+                <h2 className="text-2xl font-bold mb-4 px-6 pt-6 text-gray-800">
+                    Producten
+                </h2>
+            </div>
 
+            {/* Productlijst */}
             <div className="flex-1 px-6 py-4 overflow-y-auto space-y-4">
                 {products
                     .filter(
@@ -364,6 +454,7 @@ export default function ProductList() {
                             className="flex items-center justify-between bg-white rounded-xl shadow-md p-4 border border-gray-100"
                         >
                             <div className="flex items-center gap-4">
+                                {/* Afbeelding */}
                                 <img
                                     src={
                                         product.image_url?.startsWith("http")
@@ -373,6 +464,7 @@ export default function ProductList() {
                                     alt={product.name}
                                     className="h-20 w-20 object-cover rounded-lg shadow-sm"
                                 />
+                                {/* Productgegevens */}
                                 <div className="flex flex-col justify-center space-y-1">
                                     <p className="font-semibold text-gray-800 text-lg">
                                         {product.name}
@@ -384,25 +476,32 @@ export default function ProductList() {
                             </div>
 
                             <div className="flex gap-3">
+                                {/* Bewerken */}
                                 <button
                                     onClick={() => setEditableProduct(product)}
                                     className="bg-white p-3 rounded-full border border-gray-200 shadow-sm hover:bg-gray-100 transition-colors flex items-center justify-center"
                                 >
                                     <Pencil className="w-5 h-5 text-gray-600" />
                                 </button>
+                                {/* Verwijderen */}
                                 <button
-                                    onClick={() =>
-                                        fetch(`http://145.24.223.203:80/products/${product._id}`, {
-                                            method: "DELETE",
-                                            headers: {
-                                                Authorization: `Bearer ${localStorage.getItem("token")}`,
-                                            },
-                                        })
-                                            .then(() => fetchProducts(companyId))
-                                            .catch((err) =>
-                                                console.error("Fout bij verwijderen product:", err)
-                                            )
-                                    }
+                                    onClick={() => {
+                                        const confirmDelete = window.confirm(
+                                            `Weet je zeker dat je het product "${product.name}" wilt verwijderen?`
+                                        );
+                                        if (confirmDelete) {
+                                            fetch(`http://145.24.223.203:80/products/${product._id}`, {
+                                                method: "DELETE",
+                                                headers: {
+                                                    Authorization: `Bearer ${localStorage.getItem("token")}`,
+                                                },
+                                            })
+                                                .then(() => fetchProducts(companyId))
+                                                .catch((err) =>
+                                                    console.error("Fout bij verwijderen product:", err)
+                                                );
+                                        }
+                                    }}
                                     className="bg-white p-3 rounded-full border border-gray-200 shadow-sm hover:bg-gray-100 transition-colors flex items-center justify-center"
                                 >
                                     <Trash2 className="w-5 h-5 text-gray-600" />
@@ -412,6 +511,7 @@ export default function ProductList() {
                     ))}
             </div>
 
+            {/* Nieuw product toevoegen */}
             <button
                 onClick={() => setShowCreatePopup(true)}
                 className="absolute bottom-6 right-6 bg-blue-600 text-white p-4 rounded-full shadow-lg hover:bg-blue-700 transition-colors duration-200 flex items-center justify-center z-10"
@@ -419,36 +519,20 @@ export default function ProductList() {
                 <Plus className="w-8 h-8" />
             </button>
 
+            {/* Popup voor productbewerking */}
             {editableProduct && (
                 <ProductEditPopup
                     product={editableProduct}
                     onCancel={() => setEditableProduct(null)}
-                    onSave={(updatedProduct) => {
-                        fetch(
-                            `http://145.24.223.203:80/products/${updatedProduct._id}`,
-                            {
-                                method: "PATCH",
-                                headers: {
-                                    Authorization: `Bearer ${localStorage.getItem("token")}`,
-                                    "Content-Type": "application/json",
-                                },
-                                body: JSON.stringify(updatedProduct),
-                            }
-                        )
-                            .then(() => {
-                                setEditableProduct(null);
-                                fetchProducts(companyId);
-                            })
-                            .catch((err) =>
-                                console.error("Fout bij opslaan product:", err)
-                            );
-                    }}
+                    onSave={handleUpdateProduct}
                 />
             )}
 
+            {/* Popup voor nieuwe productcreatie */}
             {showCreatePopup && (
                 <ProductCreatePopup
                     onCancel={() => setShowCreatePopup(false)}
+                    companyId={companyId}
                     onSave={handleCreateNewProduct}
                 />
             )}

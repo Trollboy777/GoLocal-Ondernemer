@@ -1,0 +1,356 @@
+import Product from '../models/productmodel.js';
+import fs from 'fs/promises';
+import path from 'path'; // Import path
+import { fileURLToPath } from 'url'; // Import for __dirname equivalent
+
+// Define __filename and __dirname for ES Modules
+const __filename = fileURLToPath(import.meta.url);
+const _dirname = path.dirname(_filename);
+
+// Define the base path for product images within the public/uploads directory
+const productImagesBasePath = path.join(__dirname, '../public/');
+
+export const createProduct = async (req, res) => {
+    try {
+        let result;
+
+        if (Array.isArray(req.body)) {
+            // This path suggests batch creation, which typically doesn't involve single file uploads.
+            // If batch creation can involve images, the logic here would need a different approach
+            // (e.g., iterating through an array of objects, each potentially with a file).
+            // For now, assuming batch creation is without individual image uploads per item.
+            result = await Product.insertMany(req.body);
+            res.status(201).json({
+                status: 'success',
+                results: result.length,
+                data: {
+                    products: result
+                }
+            });
+        } else {
+            // Handle single product creation with image upload
+            let productImageFileName = '';
+
+            if (req.file) {
+                // Store only the filename in the database
+                productImageFileName = req.file.filename;
+            } else {
+                return res.status(400).json({
+                    status: 'fail',
+                    message: 'No product image provided or an error occurred during upload.'
+                });
+            }
+
+            // --- JSON.parse for product specific fields (e.g., options, specifications, features) ---
+            if (req.body.options) {
+                try {
+                    req.body.options = JSON.parse(req.body.options);
+                    // Assuming 'options' could be an array of objects or just an object
+                    // No Array.isArray check here, as it depends on your schema structure
+                } catch (parseError) {
+                    return res.status(400).json({
+                        status: 'fail',
+                        message: 'Ongeldig formaat voor productopties. Moet geldige JSON zijn.'
+                    });
+                }
+            }
+
+            if (req.body.specifications) {
+                try {
+                    req.body.specifications = JSON.parse(req.body.specifications);
+                } catch (parseError) {
+                    return res.status(400).json({
+                        status: 'fail',
+                        message: 'Ongeldig formaat voor productspecificaties. Moet geldige JSON zijn.'
+                    });
+                }
+            }
+
+            if (req.body.features) { // Added 'features' as another common example
+                try {
+                    req.body.features = JSON.parse(req.body.features);
+                    if (!Array.isArray(req.body.features)) {
+                        console.warn("Features field was not an array after JSON.parse. Converting to array.");
+                        req.body.features = [req.body.features];
+                    }
+                } catch (parseError) {
+                    return res.status(400).json({
+                        status: 'fail',
+                        message: 'Ongeldig formaat voor productkenmerken. Moet een geldige JSON-array zijn.'
+                    });
+                }
+            }
+            // --- END JSON.parse ---
+
+            // Combine fields from req.body and the image filename
+            const productData = {
+                ...req.body,
+                image: productImageFileName // Assign the filename to the 'image' field in your product model
+            };
+
+            result = await Product.create(productData);
+
+            res.status(201).json({
+                status: 'success',
+                data: {
+                    product: result
+                }
+            });
+        }
+    } catch (err) {
+        if (req.file) {
+            try {
+                // Use the correct path for orphan file deletion
+                await fs.unlink(path.join(productImagesBasePath, req.file.filename));
+                console.log(Deleted orphan file: ${req.file.filename});
+            } catch (unlinkErr) {
+                console.error(Failed to delete orphan file: ${unlinkErr.message});
+            }
+        }
+        res.status(400).json({ status: 'fail', message: err.message || 'Error creating product.' });
+    }
+};
+
+export const getAllProducts = async (req, res) => {
+    try {
+        const { company_id } = req.query;
+
+        let filter = {};
+        if (company_id) {
+            filter.company_id = company_id;
+        }
+
+        const products = await Product.find(filter)
+            .populate('company_id')
+            .populate('category_id');
+
+        res.status(200).json({
+            status: 'success',
+            results: products.length,
+            data: { products }
+        });
+    } catch (err) {
+        res.status(400).json({ status: 'fail', message: err.message });
+    }
+};
+
+export const getProductById = async (req, res) => {
+    try {
+        const product = await Product.findById(req.params.id)
+            .populate('company_id')
+            .populate('category_id');
+
+        if (!product) {
+            return res.status(404).json({ status: 'fail', message: 'No product found with that ID' });
+        }
+        res.status(200).json({ status: 'success', data: { product } });
+    } catch (err) {
+        res.status(400).json({ status: 'fail', message: err.message });
+    }
+};
+
+export const updateProductById = async (req, res) => {
+    try {
+        const product = await Product.findById(req.params.id).populate('company_id');
+        if (!product) {
+            return res.status(404).json({ status: 'fail', message: 'Product niet gevonden' });
+        }
+
+        const companyOwnerId = product.company_id.user_id?.toString();
+        const currentUserId = String(req.user.id);
+
+        if (companyOwnerId !== currentUserId && req.user.role !== 'admin') {
+            return res.status(403).json({ status: 'fail', message: 'Je bent geen eigenaar van dit bedrijf of admin' });
+        }
+
+        let oldProductImageOnDisk = null;
+        if (req.file) {
+            // If a new file is uploaded, update the image field in the request body
+            req.body.image = req.file.filename;
+
+            // If an old image existed, mark it for deletion
+            // Assuming 'image' is the field name in your Product model storing the filename
+            if (product.image) { // Check if product has an existing image
+                oldProductImageOnDisk = path.join(productImagesBasePath, product.image);
+            }
+        }
+
+        // --- JSON.parse for product specific fields (for updates too) ---
+        if (req.body.options) {
+            try {
+                req.body.options = JSON.parse(req.body.options);
+            } catch (parseError) {
+                return res.status(400).json({
+                    status: 'fail',
+                    message: 'Ongeldig formaat voor productopties. Moet geldige JSON zijn.'
+                });
+            }
+        }
+
+        if (req.body.specifications) {
+            try {
+                req.body.specifications = JSON.parse(req.body.specifications);
+            } catch (parseError) {
+                return res.status(400).json({
+                    status: 'fail',
+                    message: 'Ongeldig formaat voor productspecificaties. Moet geldige JSON zijn.'
+                });
+            }
+        }
+
+        if (req.body.features) {
+            try {
+                req.body.features = JSON.parse(req.body.features);
+                if (!Array.isArray(req.body.features)) {
+                    console.warn("Features field was not an array after JSON.parse. Converting to array.");
+                    req.body.features = [req.body.features];
+                }
+            } catch (parseError) {
+                return res.status(400).json({
+                    status: 'fail',
+                    message: 'Ongeldig formaat voor productkenmerken. Moet een geldige JSON-array zijn.'
+                });
+            }
+        }
+        // --- END JSON.parse ---
+
+
+        const updatedProduct = await Product.findByIdAndUpdate(req.params.id, req.body, {
+            new: true,
+            runValidators: true
+        });
+
+        // Delete the old image file if a new one was uploaded and an old one existed
+        if (oldProductImageOnDisk) {
+            try {
+                await fs.unlink(oldProductImageOnDisk);
+            } catch (unlinkErr) {
+                console.error(Failed to delete old product image: ${unlinkErr.message});
+            }
+        }
+
+        res.status(200).json({ status: 'success', data: { product: updatedProduct } });
+    } catch (err) {
+        // If an error occurs during update, clean up the newly uploaded file (if any)
+        if (req.file) {
+            try {
+                await fs.unlink(path.join(productImagesBasePath, req.file.filename));
+            } catch (unlinkErr) {
+                console.error(Failed to delete orphan file during product update: ${unlinkErr.message});
+            }
+        }
+        res.status(400).json({ status: 'fail', message: err.message });
+    }
+};
+
+export const updateManyProducts = async (req, res) => {
+    try {
+        // If 'filter' or 'update' themselves contain JSON strings, they would need parsing here
+        // e.g., if (req.body.filter) req.body.filter = JSON.parse(req.body.filter);
+        // if (req.body.update) req.body.update = JSON.parse(req.body.update);
+
+        const { filter, update } = req.body;
+
+        if (!filter || !update) {
+            return res.status(400).json({
+                status: 'fail',
+                message: 'Both filter and update objects are required in the request body.'
+            });
+        }
+
+        const result = await Product.updateMany(filter, update, {
+            runValidators: true
+        });
+
+        res.status(200).json({
+            status: 'success',
+            data: {
+                message: ${result.modifiedCount} products updated successfully.,
+                acknowledged: result.acknowledged,
+                matchedCount: result.matchedCount,
+                modifiedCount: result.modifiedCount,
+                upsertedId: result.upsertedId
+            }
+        });
+    } catch (err) {
+        res.status(400).json({ status: 'fail', message: err.message });
+    }
+};
+
+export const deleteProductById = async (req, res) => {
+    try {
+        const product = await Product.findById(req.params.id).populate('company_id');
+        if (!product) {
+            return res.status(404).json({ status: 'fail', message: 'Product niet gevonden' });
+        }
+
+        const companyOwnerId = product.company_id.user_id?.toString();
+        const currentUserId = String(req.user.id);
+
+        if (companyOwnerId !== currentUserId && req.user.role !== 'admin') {
+            return res.status(403).json({ status: 'fail', message: 'Je bent geen eigenaar van dit bedrijf of admin' });
+        }
+
+        // Use the correct path for deleting the product image
+        // Assuming 'image' is the field name in your Product model
+        if (product.image) {
+            try {
+                const imagePathOnDisk = path.join(productImagesBasePath, product.image);
+                await fs.unlink(imagePathOnDisk);
+                console.log(Deleted product image: ${imagePathOnDisk});
+            } catch (unlinkErr) {
+                console.error(Failed to delete product image: ${unlinkErr.message});
+            }
+        }
+
+        await Product.findByIdAndDelete(req.params.id);
+
+        res.status(204).json({ status: 'success', data: null });
+    } catch (err) {
+        res.status(400).json({ status: 'fail', message: err.message });
+    }
+};
+
+export const calculateDynamicPrice = async (req, res) => {
+    try {
+        const { productId, weight } = req.body;
+
+        if (!productId || !weight) {
+            return res.status(400).json({ status: 'fail', message: 'productId en weight zijn verplicht.' });
+        }
+
+        const product = await Product.findById(productId);
+        if (!product) {
+            return res.status(404).json({ status: 'fail', message: 'Product niet gevonden.' });
+        }
+
+        if (!product.price_per_gram) {
+            return res.status(400).json({ status: 'fail', message: 'price_per_gram ontbreekt voor dit product.' });
+        }
+
+        const totalPrice = +(product.price_per_gram * weight).toFixed(2);
+
+        res.status(200).json({
+            status: 'success',
+            data: {
+                name: product.name,
+                weight,
+                calculatedPrice: totalPrice
+            }
+        });
+    } catch (err) {
+        res.status(500).json({ status: 'fail', message: err.message });
+    }
+};
+
+export async function deleteData() {
+    try {
+        // Note: This mass delete does not clean up product images from disk.
+        // If you need to clean up images on mass delete, you would need to
+        // fetch all products first, then iterate and delete images, similar to companyController's deleteData.
+        await Product.deleteMany({});
+        console.log('Data succesvol verwijderd!');
+    } catch (err) {
+        console.error(Fout bij verwijderen data: ${err.message});
+    }
+}
